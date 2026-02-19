@@ -1,0 +1,99 @@
+{
+  "id": "b1d7e289-5563-48fb-866d-1b3013df194d",
+  "name": "Dashboard",
+  "createdAt": "2026-02-19T13:12:59.536Z",
+  "updatedAt": "2026-02-19T13:12:59.536Z",
+  "state": {
+    "canvasNodes": [
+      {
+        "id": "000bbd33-40fe-4c1e-a3b5-495d54ae2f45",
+        "type": "Drawer",
+        "props": {
+          "anchor": "left",
+          "width": 240,
+          "menuItems": [
+            "Dashboard",
+            "Settings > Profile",
+            "Settings > Account",
+            "Settings > Privacy",
+            "Reports"
+          ],
+          "title": "Drawer"
+        },
+        "sx": {},
+        "position": {
+          "x": 226.20001220703125,
+          "y": 136.20000076293945
+        },
+        "size": {
+          "width": 240,
+          "height": 400
+        },
+        "children": [],
+        "parentId": null,
+        "isContainer": false,
+        "zIndex": 1,
+        "locked": false
+      },
+      {
+        "id": "e57219e9-7b1f-4591-a257-c5e23c0e41ac",
+        "type": "Pagination",
+        "props": {
+          "count": 10,
+          "color": "primary",
+          "shape": "rounded",
+          "variant": "outlined",
+          "size": "medium"
+        },
+        "sx": {},
+        "position": {
+          "x": 312,
+          "y": 572.9999885559082
+        },
+        "size": {
+          "width": 419,
+          "height": 40
+        },
+        "children": [],
+        "parentId": null,
+        "isContainer": false,
+        "zIndex": 2,
+        "locked": false
+      },
+      {
+        "id": "91af09a2-2079-4cc7-9c29-9d8262488297",
+        "type": "SpeedDial",
+        "props": {
+          "direction": "left",
+          "actions": [
+            "Edit",
+            "Share",
+            "Print"
+          ]
+        },
+        "sx": {},
+        "position": {
+          "x": 551,
+          "y": 470.0000190734863
+        },
+        "size": {
+          "width": 73,
+          "height": 65
+        },
+        "children": [],
+        "parentId": null,
+        "isContainer": false,
+        "zIndex": 3,
+        "locked": false
+      }
+    ],
+    "deviceFrame": {
+      "x": 100,
+      "y": 80,
+      "width": 1280,
+      "height": 800,
+      "bgColor": "#917878"
+    },
+    "themeMode": "light"
+  }
+}
