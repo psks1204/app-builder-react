@@ -1,0 +1,124 @@
+{
+  "id": "367f287a-9cc4-452d-b7db-0405ba108cc6",
+  "name": "New name",
+  "createdAt": "2026-02-19T19:31:07.156Z",
+  "updatedAt": "2026-02-19T19:31:07.156Z",
+  "state": {
+    "canvasNodes": [
+      {
+        "id": "236b5776-e922-4a86-94ec-ea4ab5868a90",
+        "type": "Button",
+        "props": {
+          "label": "Button",
+          "variant": "contained",
+          "color": "primary",
+          "size": "medium",
+          "disabled": false
+        },
+        "sx": {},
+        "position": {
+          "x": 357.84621018629826,
+          "y": 232.61538578913775
+        },
+        "size": {
+          "width": 120,
+          "height": 40
+        },
+        "children": [],
+        "parentId": null,
+        "isContainer": false,
+        "zIndex": 1,
+        "locked": false
+      },
+      {
+        "id": "e918868e-2793-43dc-8daf-4bafdd910876",
+        "type": "ButtonGroup",
+        "props": {
+          "buttons": [
+            "One",
+            "Two",
+            "Three"
+          ],
+          "variant": "outlined",
+          "color": "primary"
+        },
+        "sx": {},
+        "position": {
+          "x": 546.6153658353369,
+          "y": 227.69233703613293
+        },
+        "size": {
+          "width": 260,
+          "height": 40
+        },
+        "children": [],
+        "parentId": null,
+        "isContainer": false,
+        "zIndex": 2,
+        "locked": false
+      },
+      {
+        "id": "e55d6aae-36e3-4360-b785-d9da842f4c78",
+        "type": "Autocomplete",
+        "props": {
+          "label": "Autocomplete",
+          "options": [
+            "Apple",
+            "Banana",
+            "Cherry",
+            "Date",
+            "Elderberry"
+          ]
+        },
+        "sx": {},
+        "position": {
+          "x": 357.07697941706755,
+          "y": 306.1538473275993
+        },
+        "size": {
+          "width": 260,
+          "height": 56
+        },
+        "children": [],
+        "parentId": null,
+        "isContainer": false,
+        "zIndex": 3,
+        "locked": false
+      },
+      {
+        "id": "d8af5119-9a0e-4b0d-ad61-8f056a19805f",
+        "type": "List",
+        "props": {
+          "items": [
+            "Item 1",
+            "Item 2",
+            "Item 3"
+          ],
+          "dense": false
+        },
+        "sx": {},
+        "position": {
+          "x": 691.3846529447119,
+          "y": 316.61539517916185
+        },
+        "size": {
+          "width": 280,
+          "height": 160
+        },
+        "children": [],
+        "parentId": null,
+        "isContainer": false,
+        "zIndex": 4,
+        "locked": false
+      }
+    ],
+    "deviceFrame": {
+      "x": 100,
+      "y": 80,
+      "width": 1280,
+      "height": 800,
+      "bgColor": "#ffffff"
+    },
+    "themeMode": "light"
+  }
+}

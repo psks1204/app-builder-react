@@ -1,75 +1,68 @@
 ﻿import type { CanvasNode, DeviceFrame } from '../store/types';
 
 // ============================================================
-// Smart Code Generator â€” produces production-quality React+MUI
-// with proper layout (flexbox, grid, flow) instead of absolute.
+// Smart Code Generator — produces production-quality React code
+// with ICG Design System components + MUI layout containers.
 // ============================================================
 
-/* â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Constants ──────────────────────────────────────────── */
 
 const CONTAINER_TYPES = new Set(['Card', 'Paper', 'Box', 'Stack', 'Grid', 'Container', 'Accordion']);
 const MUI_SPACING_UNIT = 8; // MUI default theme.spacing(1) = 8px
-const ROW_TOLERANCE = 30;   // px â€“ items within this vertical range are "same row"
-const GAP_THRESHOLD = 60;   // px â€“ min gap to insert extra spacing
+const ROW_TOLERANCE = 30;   // px — items within this vertical range are "same row"
+const GAP_THRESHOLD = 60;   // px — min gap to insert extra spacing
 
-/* â”€â”€â”€ Import maps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Import maps (ICG components + MUI layout) ──────────── */
 
-const componentImports: Record<string, string[]> = {
+// ICG library component imports
+const icgImports: Record<string, string[]> = {
   Button: ['Button'],
-  IconButton: ['IconButton'],
-  ButtonGroup: ['ButtonGroup', 'Button'],
-  TextField: ['TextField'],
-  Select: ['FormControl', 'InputLabel', 'Select', 'MenuItem'],
-  Checkbox: ['FormControlLabel', 'Checkbox'],
-  Radio: ['FormControl', 'FormLabel', 'RadioGroup', 'FormControlLabel', 'Radio'],
-  Switch: ['FormControlLabel', 'Switch'],
-  Slider: ['Slider', 'Box'],
-  Rating: ['Rating'],
-  Autocomplete: ['Autocomplete', 'TextField'],
-  Fab: ['Fab'],
-  Typography: ['Typography'],
+  IconButton: ['Button', 'Icon'],
+  ButtonGroup: ['Button'],
+  TextField: ['Input'],
+  Select: ['Select'],
+  Checkbox: ['Checkbox'],
+  Radio: ['Radio'],
+  Switch: ['Switch'],
+  Slider: ['Slider'],
+  DatePicker: ['DatePicker'],
+  Upload: ['Upload', 'Button'],
+  Typography: [],  // rendered as HTML
   Avatar: ['Avatar'],
   Badge: ['Badge'],
-  Chip: ['Chip'],
-  Divider: ['Divider'],
-  List: ['List', 'ListItem', 'ListItemText'],
-  Table: ['Table', 'TableBody', 'TableCell', 'TableContainer', 'TableHead', 'TableRow', 'Paper'],
+  Tag: ['Tag'],
+  Divider: [],  // rendered as HTML <hr>
+  List: [],  // rendered as HTML divs
+  Table: ['Table'],
   Tooltip: ['Tooltip', 'Button'],
-  Image: ['Box'],
-  Card: ['Card', 'CardHeader', 'CardContent'],
-  Paper: ['Paper'],
-  Accordion: ['Accordion', 'AccordionSummary', 'AccordionDetails', 'Typography'],
-  AppBar: ['AppBar', 'Toolbar', 'Typography', 'Button'],
-  Tabs: ['Tabs', 'Tab', 'Box'],
-  Breadcrumbs: ['Breadcrumbs', 'Link', 'Typography'],
-  Drawer: ['Paper', 'Typography', 'List', 'ListItemButton', 'ListItemText', 'Collapse', 'Divider'],
+  Image: [],  // rendered as HTML <img>
+  Carousel: ['Carousel'],
+  Card: ['Card'],
+  Paper: ['Section'],
+  Accordion: ['Collapse'],
+  AppBar: ['Menu'],
+  Tabs: ['Tabs'],
+  Breadcrumbs: ['Breadcrumb'],
+  Drawer: ['Menu'],
   Pagination: ['Pagination'],
-  Stepper: ['Stepper', 'Step', 'StepLabel'],
-  BottomNavigation: ['BottomNavigation', 'BottomNavigationAction'],
-  SpeedDial: ['SpeedDial', 'SpeedDialAction'],
+  Stepper: ['Stepper'],
+  Dropdown: ['Dropdown', 'Menu', 'Button'],
   Alert: ['Alert'],
-  Snackbar: ['Paper', 'Typography'],
-  Dialog: ['Paper', 'Typography', 'Button', 'Box'],
-  CircularProgress: ['CircularProgress'],
-  LinearProgress: ['LinearProgress'],
-  Skeleton: ['Skeleton'],
+  Notification: [],  // rendered as HTML divs (static preview)
+  Modal: ['Button'],  // rendered as HTML card (static preview)
+  Loading: ['Loading'],
+  Popover: ['Popover', 'Button'],
+};
+
+// MUI layout components
+const muiLayoutImports: Record<string, string[]> = {
   Box: ['Box'],
   Stack: ['Stack'],
   Grid: ['Grid'],
   Container: ['Container'],
 };
 
-const iconImports: Record<string, string[]> = {
-  Accordion: ['ExpandMore'],
-  Drawer: ['ExpandMore', 'ExpandLess'],
-  Fab: ['Add'],
-  IconButton: ['Star'],
-  Badge: ['Mail'],
-  SpeedDial: ['Add', 'Edit', 'Share', 'Print', 'Mail', 'Favorite'],
-  BottomNavigation: ['Restore', 'Favorite', 'LocationOn'],
-};
-
-/* â”€â”€â”€ Types for layout tree â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Types for layout tree ──────────────────────────────── */
 
 interface LayoutNode {
   node: CanvasNode;
@@ -81,7 +74,7 @@ interface LayoutNode {
 
 type LayoutDirection = 'column' | 'row' | 'wrap';
 
-/* â”€â”€â”€ Step 1: Build containment tree â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Step 1: Build containment tree ─────────────────────── */
 
 function isVisuallyInside(child: CanvasNode, parent: CanvasNode): boolean {
   const cx = child.position.x;
@@ -118,13 +111,11 @@ function buildLayoutTree(nodes: CanvasNode[], frameX: number, frameY: number): L
   }
 
   // Assign children to the smallest container that contains them
-  // Process from smallest to largest, checking against larger containers
   const byAreaAsc = [...sorted].reverse();
 
   for (const child of byAreaAsc) {
     if (assigned.has(child.id)) continue;
 
-    // Find the smallest container that contains this child
     let bestParent: CanvasNode | null = null;
     let bestArea = Infinity;
 
@@ -142,7 +133,6 @@ function buildLayoutTree(nodes: CanvasNode[], frameX: number, frameY: number): L
     if (bestParent) {
       const parentLayout = layoutMap.get(bestParent.id)!;
       const childLayout = layoutMap.get(child.id)!;
-      // Make position relative to parent
       childLayout.relX = child.position.x - bestParent.position.x;
       childLayout.relY = child.position.y - bestParent.position.y;
       parentLayout.children.push(childLayout);
@@ -161,19 +151,19 @@ function buildLayoutTree(nodes: CanvasNode[], frameX: number, frameY: number): L
   return roots;
 }
 
-/* â”€â”€â”€ Step 2: Infer layout direction for siblings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Step 2: Infer layout direction for siblings ──────────── */
 
 function inferDirection(children: LayoutNode[]): LayoutDirection {
   if (children.length <= 1) return 'column';
 
   const sorted = [...children].sort((a, b) => a.relY - b.relY || a.relX - b.relX);
 
-  // Check if all items are roughly on the same Y â†’ row
+  // Check if all items are roughly on the same Y → row
   const yValues = sorted.map(c => c.relY);
   const yRange = Math.max(...yValues) - Math.min(...yValues);
   if (yRange < ROW_TOLERANCE) return 'row';
 
-  // Check if items form distinct rows with multiple items â†’ wrap/grid
+  // Check if items form distinct rows with multiple items → wrap/grid
   const rows: LayoutNode[][] = [];
   let currentRow: LayoutNode[] = [sorted[0]];
   for (let i = 1; i < sorted.length; i++) {
@@ -186,7 +176,6 @@ function inferDirection(children: LayoutNode[]): LayoutDirection {
   }
   rows.push(currentRow);
 
-  // If most rows have >1 item, it's a grid/wrap layout
   const multiItemRows = rows.filter(r => r.length > 1).length;
   if (multiItemRows > rows.length / 2) return 'wrap';
 
@@ -217,7 +206,7 @@ function computeSpacing(children: LayoutNode[], direction: LayoutDirection): num
   return Math.min(spacing, 6); // cap at 6
 }
 
-/* â”€â”€â”€ Step 3: Sort children by visual position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Step 3: Sort children by visual position ─────────────── */
 
 function sortByPosition(children: LayoutNode[], direction: LayoutDirection): LayoutNode[] {
   return [...children].sort((a, b) => {
@@ -230,30 +219,33 @@ function sortByPosition(children: LayoutNode[], direction: LayoutDirection): Lay
   });
 }
 
-/* â”€â”€â”€ Import collector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Import collector ───────────────────────────────────── */
 
 function collectImports(tree: LayoutNode[]) {
+  const icg = new Set<string>();
   const mui = new Set<string>();
-  const icons = new Set<string>();
 
   function walk(nodes: LayoutNode[]) {
     for (const ln of nodes) {
-      const ci = componentImports[ln.node.type];
-      if (ci) ci.forEach((n) => mui.add(n));
-      const ii = iconImports[ln.node.type];
-      if (ii) ii.forEach((n) => icons.add(n));
+      const type = ln.node.type;
+      // ICG components
+      const ci = icgImports[type];
+      if (ci) ci.forEach((n) => icg.add(n));
+      // MUI layout components
+      const mi = muiLayoutImports[type];
+      if (mi) mi.forEach((n) => mui.add(n));
       // Containers with children use <Stack> as internal layout wrapper
-      if (ln.children.length > 0 && CONTAINER_TYPES.has(ln.node.type)) {
+      if (ln.children.length > 0 && CONTAINER_TYPES.has(type)) {
         mui.add('Stack');
       }
       if (ln.children.length > 0) walk(ln.children);
     }
   }
   walk(tree);
-  return { mui, icons };
+  return { icg, mui };
 }
 
-/* â”€â”€â”€ SX helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── SX helper ──────────────────────────────────────────── */
 
 function sxObj(sx: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
@@ -280,14 +272,51 @@ function sxToInline(sx: Record<string, unknown>, indent: string): string {
   return ` sx={{\n${inner}\n${indent}}}`;
 }
 
-/* ─── Nested Drawer menu tree for codegen ──────────────────── */
+/** Convert sx-like object to inline style string for ICG components */
+function styleToInline(sx: Record<string, unknown>, indent: string): string {
+  const map: Record<string, string> = {
+    p: 'padding', pt: 'paddingTop', pr: 'paddingRight', pb: 'paddingBottom', pl: 'paddingLeft',
+    m: 'margin', mt: 'marginTop', mr: 'marginRight', mb: 'marginBottom', ml: 'marginLeft',
+    bgcolor: 'backgroundColor', color: 'color',
+    border: 'border', borderRadius: 'borderRadius',
+    width: 'width', height: 'height', display: 'display',
+    flexDirection: 'flexDirection', alignItems: 'alignItems', justifyContent: 'justifyContent',
+    gap: 'gap', overflow: 'overflow', opacity: 'opacity', boxShadow: 'boxShadow',
+  };
+  const spacingKeys = new Set(['p', 'pt', 'pr', 'pb', 'pl', 'm', 'mt', 'mr', 'mb', 'ml']);
+  const entries = Object.entries(sx).filter(([k, v]) => v !== undefined && v !== '' && !k.startsWith('&'));
+  if (entries.length === 0) return '';
+
+  const parts: string[] = [];
+  for (const [k, v] of entries) {
+    const cssProp = map[k] || k;
+    if (spacingKeys.has(k) && typeof v === 'number') {
+      parts.push(`${cssProp}: ${v * 8}`);
+    } else if (typeof v === 'number') {
+      parts.push(`${cssProp}: ${v}`);
+    } else {
+      parts.push(`${cssProp}: '${v}'`);
+    }
+  }
+
+  if (parts.length <= 3) {
+    return ` style={{ ${parts.join(', ')} }}`;
+  }
+  return ` style={{\n${parts.map(p => `${indent}  ${p}`).join(',\n')}\n${indent}}}`;
+}
+
+/* ─── Nested menu tree for Drawer codegen ──────────────────── */
 
 interface CodegenMenuNode {
   label: string;
+  key: string;
   children: CodegenMenuNode[];
 }
 
+let _menuKeyCounter = 0;
+
 function buildCodegenMenuTree(items: string[]): CodegenMenuNode[] {
+  _menuKeyCounter = 0;
   const root: CodegenMenuNode[] = [];
   for (const raw of items) {
     const parts = raw.split('>').map((s) => s.trim()).filter(Boolean);
@@ -295,7 +324,7 @@ function buildCodegenMenuTree(items: string[]): CodegenMenuNode[] {
     for (let i = 0; i < parts.length; i++) {
       let existing = level.find((n) => n.label === parts[i]);
       if (!existing) {
-        existing = { label: parts[i], children: [] };
+        existing = { label: parts[i], key: `menu-${_menuKeyCounter++}`, children: [] };
         level.push(existing);
       }
       level = existing.children;
@@ -304,54 +333,15 @@ function buildCodegenMenuTree(items: string[]): CodegenMenuNode[] {
   return root;
 }
 
-function renderMenuNode(node: CodegenMenuNode, indent: string, statePrefix: string): { jsx: string; states: string[] } {
-  const nl = '\n';
-  const states: string[] = [];
-
-  if (node.children.length === 0) {
-    return {
-      jsx: `${indent}<ListItemButton>${nl}${indent}  <ListItemText primary="${node.label}" />${nl}${indent}</ListItemButton>`,
-      states,
-    };
-  }
-
-  const stateVar = `open${statePrefix}${node.label.replace(/\s+/g, '')}`;
-  states.push(stateVar);
-
-  const childResults = node.children.map((c, i) => renderMenuNode(c, indent + '    ', statePrefix + node.label.replace(/\s+/g, '')));
-  const childStates = childResults.flatMap(r => r.states);
-  states.push(...childStates);
-
-  const childJsx = childResults.map(r => r.jsx).join(nl);
-
-  const jsx = [
-    `${indent}<ListItemButton onClick={() => set${stateVar.charAt(0).toUpperCase() + stateVar.slice(1)}(o => !o)}>`,
-    `${indent}  <ListItemText primary="${node.label}" />`,
-    `${indent}  {${stateVar} ? <ExpandLessIcon /> : <ExpandMoreIcon />}`,
-    `${indent}</ListItemButton>`,
-    `${indent}<Collapse in={${stateVar}} timeout="auto" unmountOnExit>`,
-    `${indent}  <List component="div" disablePadding dense sx={{ pl: 2 }}>`,
-    childJsx,
-    `${indent}  </List>`,
-    `${indent}</Collapse>`,
-  ].join(nl);
-
-  return { jsx, states };
-}
-
-function generateDrawerNested(menuItems: string[], indent: string): string {
-  const tree = buildCodegenMenuTree(menuItems);
-  const hasNested = tree.some(n => n.children.length > 0);
-
-  if (!hasNested) {
-    // Simple flat list
-    const nl = '\n';
-    return `${indent}<List dense disablePadding>${nl}${tree.map(n => `${indent}  <ListItemButton><ListItemText primary="${n.label}" /></ListItemButton>`).join(nl)}${nl}${indent}</List>`;
-  }
-
-  const results = tree.map((n, i) => renderMenuNode(n, indent + '  ', ''));
-  const nl = '\n';
-  return `${indent}<List dense disablePadding>${nl}${results.map(r => r.jsx).join(nl)}${nl}${indent}</List>`;
+/** Convert menu tree to ICG Menu items array string for codegen */
+function menuItemsToCode(nodes: CodegenMenuNode[], indent: string): string {
+  const items = nodes.map(n => {
+    if (n.children.length > 0) {
+      return `${indent}  { key: '${n.key}', label: '${n.label}', children: [\n${menuItemsToCode(n.children, indent + '    ')}\n${indent}  ] }`;
+    }
+    return `${indent}  { key: '${n.key}', label: '${n.label}' }`;
+  });
+  return items.join(',\n');
 }
 
 /* ─── Node → JSX (leaf, no children wrapping) ──────────────── */
@@ -360,104 +350,152 @@ function leafJsx(node: CanvasNode, indent: string): string {
   const { type, props, sx: rawSx } = node;
   const sx = sxObj(rawSx ?? {});
   const sxStr = sxToInline(sx, indent);
+  const styleStr = styleToInline(sx, indent);
   const nl = '\n';
 
   switch (type) {
     case 'Button':
-      return `${indent}<Button variant="${props.variant}" color="${props.color}" size="${props.size}"${props.disabled ? ' disabled' : ''}${props.fullWidth !== false ? ' fullWidth' : ''}${sxStr}>${props.label}</Button>`;
+      return `${indent}<Button type="${props.type}" size="${props.size}"${props.danger ? ' danger' : ''}${props.disabled ? ' disabled' : ''}${props.block ? ' block' : ''}${props.shape && props.shape !== 'default' ? ` shape="${props.shape}"` : ''}${styleStr}>${props.label}</Button>`;
+
     case 'IconButton':
-      return `${indent}<IconButton color="${props.color}" size="${props.size}"${props.disabled ? ' disabled' : ''}${sxStr}><StarIcon /></IconButton>`;
+      return `${indent}<Button type="${props.type}" shape="${props.shape}" size="${props.size}" icon={<Icon type="${props.iconType}" />}${props.disabled ? ' disabled' : ''}${styleStr} />`;
+
     case 'ButtonGroup':
-      return `${indent}<ButtonGroup variant="${props.variant}" color="${props.color}"${sxStr}>${nl}${(props.buttons as string[]).map(b => `${indent}  <Button>${b}</Button>`).join(nl)}${nl}${indent}</ButtonGroup>`;
+      return `${indent}<Button.Group size="${props.size}"${styleStr}>${nl}${(props.buttons as string[]).map(b => `${indent}  <Button>${b}</Button>`).join(nl)}${nl}${indent}</Button.Group>`;
+
     case 'TextField':
-      return `${indent}<TextField label="${props.label}" placeholder="${props.placeholder}" variant="${props.variant}" size="${props.size}"${props.disabled ? ' disabled' : ''}${props.fullWidth !== false ? ' fullWidth' : ''}${sxStr} />`;
+      return `${indent}<Input placeholder="${props.placeholder}" size="${props.size}"${props.disabled ? ' disabled' : ''}${props.allowClear ? ' allowClear' : ''} style={{ width: '100%' }} />`;
+
     case 'Select': {
       const opts = (props.options as string[]) || [];
-      return `${indent}<FormControl fullWidth size="small"${sxStr}>${nl}${indent}  <InputLabel>${props.label}</InputLabel>${nl}${indent}  <Select label="${props.label}" defaultValue="">${nl}${opts.map(o => `${indent}    <MenuItem value="${o}">${o}</MenuItem>`).join(nl)}${nl}${indent}  </Select>${nl}${indent}</FormControl>`;
+      const optionsCode = opts.map(o => `{ value: '${o}', label: '${o}' }`).join(', ');
+      return `${indent}<Select placeholder="${props.placeholder}" size="${props.size}" options={[${optionsCode}]}${props.disabled ? ' disabled' : ''}${props.allowClear ? ' allowClear' : ''}${props.showSearch ? ' showSearch' : ''} style={{ width: '100%' }} />`;
     }
+
     case 'Checkbox':
-      return `${indent}<FormControlLabel control={<Checkbox${props.disabled ? ' disabled' : ''} color="${props.color}" />} label="${props.label}"${sxStr} />`;
-    case 'Radio':
-      return `${indent}<FormControl${sxStr}>${nl}${indent}  <FormLabel>${props.label}</FormLabel>${nl}${indent}  <RadioGroup${props.row ? ' row' : ''} defaultValue="${(props.options as string[])?.[0]}">${nl}${(props.options as string[]).map(o => `${indent}    <FormControlLabel value="${o}" control={<Radio />} label="${o}" />`).join(nl)}${nl}${indent}  </RadioGroup>${nl}${indent}</FormControl>`;
+      return `${indent}<Checkbox${props.disabled ? ' disabled' : ''}>${props.label}</Checkbox>`;
+
+    case 'Radio': {
+      const radioOpts = (props.options as string[]) || [];
+      return `${indent}<Radio.Group options={${JSON.stringify(radioOpts)}} optionType="${props.optionType}" buttonStyle="${props.buttonStyle}" defaultValue="${radioOpts[0]}" />`;
+    }
+
     case 'Switch':
-      return `${indent}<FormControlLabel control={<Switch${props.disabled ? ' disabled' : ''} color="${props.color}" />} label="${props.label}"${sxStr} />`;
+      return `${indent}<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>${nl}${indent}  <Switch${props.disabled ? ' disabled' : ''} size="${props.size}" />${nl}${indent}  <span>${props.label}</span>${nl}${indent}</div>`;
+
     case 'Slider':
-      return `${indent}<Slider value={${props.value}} min={${props.min}} max={${props.max}} step={${props.step}}${props.disabled ? ' disabled' : ''} color="${props.color}" valueLabelDisplay="auto"${sxStr} />`;
-    case 'Rating':
-      return `${indent}<Rating value={${props.value}} max={${props.max}} precision={${props.precision}}${props.readOnly ? ' readOnly' : ''} size="${props.size}"${sxStr} />`;
-    case 'Autocomplete':
-      return `${indent}<Autocomplete options={${JSON.stringify(props.options)}} renderInput={(params) => <TextField {...params} label="${props.label}" size="small" />} size="small" fullWidth${sxStr} />`;
-    case 'Fab':
-      return `${indent}<Fab color="${props.color}" size="${props.size}"${sxStr}><AddIcon /></Fab>`;
-    case 'Typography':
-      return `${indent}<Typography variant="${props.variant}"${props.color && props.color !== 'inherit' ? ` color="${props.color}"` : ''}${props.align && props.align !== 'left' ? ` align="${props.align}"` : ''}${props.gutterBottom ? ' gutterBottom' : ''}${sxStr}>${props.text}</Typography>`;
+      return `${indent}<Slider defaultValue={${props.value}} min={${props.min}} max={${props.max}} step={${props.step}}${props.disabled ? ' disabled' : ''} />`;
+
+    case 'DatePicker':
+      return `${indent}<DatePicker placeholder="${props.placeholder}" size="${props.size}"${props.disabled ? ' disabled' : ''} picker="${props.picker}" style={{ width: '100%' }} />`;
+
+    case 'Upload':
+      return `${indent}<Upload listType="${props.listType}">${nl}${indent}  <Button>${props.text}</Button>${nl}${indent}</Upload>`;
+
+    case 'Typography': {
+      const level = props.level as string;
+      const tagMap: Record<string, string> = { h1: 'h1', h2: 'h2', h3: 'h3', h4: 'h4', h5: 'h5', body: 'p', caption: 'span' };
+      const tag = tagMap[level] || 'p';
+      const align = props.align && props.align !== 'left' ? ` style={{ textAlign: '${props.align}' }}` : '';
+      return `${indent}<${tag}${align}>${props.text}</${tag}>`;
+    }
+
     case 'Avatar':
-      return `${indent}<Avatar variant="${props.variant}" sx={{ bgcolor: '${props.bgColor}' }}>${props.text}</Avatar>`;
+      return `${indent}<Avatar shape="${props.shape}" size="${props.size}" style={{ backgroundColor: '${props.bgColor}' }}>${props.text}</Avatar>`;
+
     case 'Badge':
-      return `${indent}<Badge badgeContent="${props.badgeContent}" color="${props.color}"${sxStr}><MailIcon color="action" /></Badge>`;
-    case 'Chip':
-      return `${indent}<Chip label="${props.label}" variant="${props.variant}" color="${props.color}" size="${props.size}"${props.clickable ? ' clickable' : ''}${sxStr} />`;
+      return `${indent}<Badge count={${props.count}}${props.dot ? ' dot' : ''} status="${props.status}">${nl}${indent}  <div style={{ width: 32, height: 32, borderRadius: 4, backgroundColor: '#e8e8e8' }} />${nl}${indent}</Badge>`;
+
+    case 'Tag':
+      return `${indent}<Tag color="${props.color}"${props.closable ? ' closable' : ''}${!props.bordered ? ' bordered={false}' : ''}>${props.label}</Tag>`;
+
     case 'Divider':
       return props.text
-        ? `${indent}<Divider textAlign="${props.textAlign}"${sxStr}>${props.text}</Divider>`
-        : `${indent}<Divider${sxStr} />`;
-    case 'List':
-      return `${indent}<List${props.dense ? ' dense' : ''}${sxStr}>${nl}${(props.items as string[]).map(i => `${indent}  <ListItem><ListItemText primary="${i}" /></ListItem>`).join(nl)}${nl}${indent}</List>`;
+        ? `${indent}<hr style={{ borderTop: '${props.dashed ? '1px dashed #d9d9d9' : '1px solid #d9d9d9'}', margin: '12px 0' }} />`
+        : `${indent}<hr style={{ borderTop: '${props.dashed ? '1px dashed #d9d9d9' : '1px solid #d9d9d9'}', margin: '12px 0' }} />`;
+
+    case 'List': {
+      const items = (props.items as string[]) || [];
+      return `${indent}<div style={{ border: ${props.bordered ? "'1px solid #d9d9d9'" : "'none'"}, borderRadius: 4 }}>${nl}${items.map(item => `${indent}  <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>${item}</div>`).join(nl)}${nl}${indent}</div>`;
+    }
+
     case 'Table': {
       const cols = (props.columns as string[]) || ['#', 'Name', 'Email'];
       const rows = (props.rows as string[]) || ['1,Alice,alice@mail.com'];
-      return `${indent}<TableContainer component={Paper}${sxStr}>${nl}${indent}  <Table size="${props.size}">${nl}${indent}    <TableHead>${nl}${indent}      <TableRow>${nl}${cols.map(c => `${indent}        <TableCell>${c}</TableCell>`).join(nl)}${nl}${indent}      </TableRow>${nl}${indent}    </TableHead>${nl}${indent}    <TableBody>${nl}${rows.map(row => {
+      const columnsCode = cols.map((c, i) => `{ title: '${c}', dataIndex: 'col${i}', key: 'col${i}' }`).join(`,\n${indent}    `);
+      const dataCode = rows.map((row, ri) => {
         const cells = String(row).split(',');
-        return `${indent}      <TableRow>${nl}${cols.map((_, ci) => `${indent}        <TableCell>${cells[ci] ?? ''}</TableCell>`).join(nl)}${nl}${indent}      </TableRow>`;
-      }).join(nl)}${nl}${indent}    </TableBody>${nl}${indent}  </Table>${nl}${indent}</TableContainer>`;
+        const fields = cols.map((_, ci) => `col${ci}: '${cells[ci] ?? ''}'`).join(', ');
+        return `{ key: '${ri}', ${fields} }`;
+      }).join(`,\n${indent}    `);
+      return `${indent}<Table${nl}${indent}  columns={[${nl}${indent}    ${columnsCode}${nl}${indent}  ]}${nl}${indent}  dataSource={[${nl}${indent}    ${dataCode}${nl}${indent}  ]}${nl}${indent}  size="${props.size}"${props.bordered ? ' bordered' : ''}${nl}${indent}  pagination={false}${nl}${indent}/>`;
     }
+
     case 'Tooltip':
-      return `${indent}<Tooltip title="${props.title}" placement="${props.placement}"${props.arrow ? ' arrow' : ''}>${nl}${indent}  <Button variant="outlined" size="small">Hover me</Button>${nl}${indent}</Tooltip>`;
+      return `${indent}<Tooltip title="${props.title}" placement="${props.placement}">${nl}${indent}  <Button type="default" size="small">Hover me</Button>${nl}${indent}</Tooltip>`;
+
     case 'Image':
-      return `${indent}<Box component="img" src="${props.src}" alt="${props.alt}" sx={{ objectFit: '${props.objectFit}', width: '100%', height: 'auto', maxWidth: ${node.size.width} }} />`;
+      return `${indent}<img src="${props.src}" alt="${props.alt}" style={{ objectFit: '${props.objectFit}', width: '100%', height: 'auto', maxWidth: ${node.size.width} }} />`;
+
+    case 'Carousel': {
+      const slides = (props.slides as string[]) || ['Slide 1', 'Slide 2'];
+      return `${indent}<Carousel${props.autoplay ? ' autoplay' : ''}${!props.dots ? ' dots={false}' : ''} effect="${props.effect}">${nl}${slides.map((s, i) => `${indent}  <div><div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'hsl(${(i * 60 + 200) % 360}, 50%, 85%)', fontSize: 18, fontWeight: 500 }}>${s}</div></div>`).join(nl)}${nl}${indent}</Carousel>`;
+    }
+
     case 'AppBar': {
-      const appActions = (props.actions as string[]) || ['Login'];
-      return `${indent}<AppBar position="static" color="${props.color}"${sxStr}>${nl}${indent}  <Toolbar>${nl}${indent}    <Typography variant="h6" sx={{ flexGrow: 1 }}>${props.title}</Typography>${nl}${appActions.map(a => `${indent}    <Button color="inherit">${a}</Button>`).join(nl)}${nl}${indent}  </Toolbar>${nl}${indent}</AppBar>`;
+      const menuItems = (props.items as string[]) || ['Home', 'Products', 'About'];
+      const itemsCode = menuItems.map((item, i) => `{ key: '${i}', label: '${item}' }`).join(', ');
+      return `${indent}<Menu mode="${props.mode}" theme="${props.theme}" defaultSelectedKeys={['0']} items={[${itemsCode}]} />`;
     }
-    case 'Tabs':
-      return `${indent}<Tabs value={0} textColor="${props.color}" indicatorColor="${props.color}"${sxStr}>${nl}${(props.tabs as string[]).map(t => `${indent}  <Tab label="${t}" />`).join(nl)}${nl}${indent}</Tabs>`;
+
+    case 'Tabs': {
+      const tabs = (props.tabs as string[]) || ['Tab 1', 'Tab 2', 'Tab 3'];
+      const itemsCode = tabs.map((t, i) => `{ key: '${i}', label: '${t}' }`).join(', ');
+      return `${indent}<Tabs defaultActiveKey="0" type="${props.type}" size="${props.size}"${props.tabPosition && props.tabPosition !== 'top' ? ` tabPosition="${props.tabPosition}"` : ''} items={[${itemsCode}]} />`;
+    }
+
     case 'Breadcrumbs': {
-      const items = props.items as string[];
-      return `${indent}<Breadcrumbs${sxStr}>${nl}${items.map((it, i) => i === items.length - 1 ? `${indent}  <Typography color="text.primary">${it}</Typography>` : `${indent}  <Link underline="hover" color="inherit" href="#">${it}</Link>`).join(nl)}${nl}${indent}</Breadcrumbs>`;
+      const items = (props.items as string[]) || ['Home', 'Category', 'Current'];
+      return `${indent}<Breadcrumb separator="${props.separator}">${nl}${items.map(it => `${indent}  <Breadcrumb.Item>${it}</Breadcrumb.Item>`).join(nl)}${nl}${indent}</Breadcrumb>`;
     }
-    case 'Pagination':
-      return `${indent}<Pagination count={${props.count}} color="${props.color}" shape="${props.shape}" variant="${props.variant}" size="${props.size}"${sxStr} />`;
-    case 'Stepper':
-      return `${indent}<Stepper activeStep={${props.activeStep}} orientation="${props.orientation}"${sxStr}>${nl}${(props.steps as string[]).map(s => `${indent}  <Step><StepLabel>${s}</StepLabel></Step>`).join(nl)}${nl}${indent}</Stepper>`;
-    case 'Alert':
-      return `${indent}<Alert severity="${props.severity}" variant="${props.variant}"${sxStr}>${props.text}</Alert>`;
-    case 'CircularProgress':
-      return `${indent}<CircularProgress variant="${props.variant}" color="${props.color}" size={${props.size}}${props.variant === 'determinate' ? ` value={${props.value}}` : ''}${sxStr} />`;
-    case 'LinearProgress':
-      return `${indent}<LinearProgress variant="${props.variant}" color="${props.color}"${props.variant === 'determinate' ? ` value={${props.value}}` : ''} sx={{ width: '100%'${Object.keys(sx).length ? ', ' + Object.entries(sx).map(([k, v]) => `${k}: ${typeof v === 'number' ? v : `'${v}'`}`).join(', ') : ''} }} />`;
-    case 'Skeleton':
-      return `${indent}<Skeleton variant="${props.variant}" width="100%" height={${node.size.height}} animation="${props.animation}"${sxStr} />`;
-    case 'BottomNavigation':
-      return `${indent}<BottomNavigation showLabels value={0}${sxStr}>${nl}${(props.items as string[])?.map((item, i) => `${indent}  <BottomNavigationAction label="${item}" icon={${['<RestoreIcon />', '<FavoriteIcon />', '<LocationIcon />'][i % 3]}} />`).join(nl)}${nl}${indent}</BottomNavigation>`;
-    case 'SpeedDial': {
-      const sdActions = (props.actions as string[]) || ['Edit', 'Share', 'Print'];
-      const sdIcons = ['<EditIcon />', '<ShareIcon />', '<PrintIcon />', '<MailIcon />', '<FavoriteIcon />'];
-      const sxInner = Object.keys(sx).length ? ', ' + Object.entries(sx).map(([k, v]) => `${k}: ${typeof v === 'number' ? v : `'${v}'`}`).join(', ') : '';
-      return `${indent}<Box sx={{ position: 'relative', height: 80${sxInner} }}>${nl}${indent}  <SpeedDial ariaLabel="Speed Dial" icon={<AddIcon />} direction="${props.direction}" sx={{ position: 'absolute', bottom: 8, right: 8 }}>${nl}${sdActions.map((a, i) => `${indent}    <SpeedDialAction icon={${sdIcons[i % sdIcons.length]}} tooltipTitle="${a}" />`).join(nl)}${nl}${indent}  </SpeedDial>${nl}${indent}</Box>`;
-    }
-    case 'Snackbar':
-      return `${indent}<Paper elevation={6} sx={{ px: 2, py: 1, bgcolor: '#323232', color: '#fff' }}>${nl}${indent}  <Typography variant="body2">${props.message}</Typography>${nl}${indent}</Paper>`;
-    case 'Dialog': {
-      const dlgActions = (props.actions as string[]) || ['Cancel', 'OK'];
-      return `${indent}<Paper variant="outlined" sx={{ p: 3 }}>${nl}${indent}  <Typography variant="h6" gutterBottom>${props.title}</Typography>${nl}${indent}  <Typography variant="body2" color="text.secondary">${props.content}</Typography>${nl}${indent}  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>${nl}${dlgActions.map((a, i) => `${indent}    <Button size="small"${i === dlgActions.length - 1 ? ' variant="contained"' : ''}>${a}</Button>`).join(nl)}${nl}${indent}  </Box>${nl}${indent}</Paper>`;
-    }
+
     case 'Drawer': {
-      const drawerTitle = (props.title as string) || 'Drawer';
-      const menuItems = (props.menuItems as string[]) || ['Menu 1', 'Menu 2', 'Menu 3'];
-      const drawerCode = generateDrawerNested(menuItems, indent + '  ');
-      const sxInner = Object.keys(sx).length ? ', ' + Object.entries(sx).map(([k, v]) => `${k}: ${typeof v === 'number' ? v : `'${v}'`}`).join(', ') : '';
-      return `${indent}<Paper variant="outlined" sx={{ width: ${props.width}${sxInner} }}>${nl}${indent}  <Typography variant="subtitle2" sx={{ px: 2, pt: 2, pb: 1 }}>${drawerTitle}</Typography>${nl}${indent}  <Divider />${nl}${drawerCode}${nl}${indent}</Paper>`;
+      const menuItems = (props.menuItems as string[]) || ['Dashboard', 'Settings'];
+      const tree = buildCodegenMenuTree(menuItems);
+      const itemsCode = menuItemsToCode(tree, indent + '  ');
+      return `${indent}<div style={{ border: '1px solid #f0f0f0', borderRadius: 4 }}>${nl}${indent}  <div style={{ padding: '12px 16px', fontWeight: 600, borderBottom: '1px solid #f0f0f0' }}>${props.title}</div>${nl}${indent}  <Menu mode="${props.mode}" theme="${props.theme}" style={{ border: 'none' }} items={[${nl}${itemsCode}${nl}${indent}  ]} />${nl}${indent}</div>`;
     }
+
+    case 'Pagination':
+      return `${indent}<Pagination total={${props.total}} pageSize={${props.pageSize}} size="${props.size}"${props.showSizeChanger ? ' showSizeChanger' : ''}${props.showQuickJumper ? ' showQuickJumper' : ''}${props.simple ? ' simple' : ''} />`;
+
+    case 'Stepper': {
+      const steps = (props.steps as string[]) || ['Step 1', 'Step 2', 'Step 3'];
+      const itemsCode = steps.map(s => `{ title: '${s}' }`).join(', ');
+      return `${indent}<Stepper current={${props.current}} direction="${props.direction}" size="${props.size}" items={[${itemsCode}]} />`;
+    }
+
+    case 'Dropdown': {
+      const items = (props.items as string[]) || ['Action 1', 'Action 2'];
+      const itemsCode = items.map((item, i) => `{ key: '${i}', label: '${item}' }`).join(', ');
+      return `${indent}<Dropdown overlay={<Menu items={[${itemsCode}]} />} placement="${props.placement}" trigger={['${props.trigger}']}>${nl}${indent}  <Button>${props.label} ▾</Button>${nl}${indent}</Dropdown>`;
+    }
+
+    case 'Alert':
+      return `${indent}<Alert type="${props.type}"${props.closable ? ' closable' : ''} showIcon${props.banner ? ' banner' : ''}>${props.text}</Alert>`;
+
+    case 'Notification':
+      return `${indent}<div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>${nl}${indent}  <div style={{ fontWeight: 600, marginBottom: 4 }}>${props.message}</div>${nl}${indent}  <div style={{ color: '#666', fontSize: 13 }}>${props.description}</div>${nl}${indent}</div>`;
+
+    case 'Modal':
+      return `${indent}<div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', backgroundColor: '#fff' }}>${nl}${indent}  <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>${props.title}</div>${nl}${indent}  <div style={{ color: '#666', fontSize: 14, marginBottom: 20 }}>${props.content}</div>${nl}${indent}  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>${nl}${indent}    <Button>${props.cancelText || 'Cancel'}</Button>${nl}${indent}    <Button type="primary">${props.okText || 'OK'}</Button>${nl}${indent}  </div>${nl}${indent}</div>`;
+
+    case 'Loading':
+      return `${indent}<Loading spinning size="${props.size}"${props.tip ? ` tip="${props.tip}"` : ''} />`;
+
+    case 'Popover':
+      return `${indent}<Popover title="${props.title}" content="${props.content}" trigger="${props.trigger}" placement="${props.placement}">${nl}${indent}  <Button type="default" size="small">Hover me</Button>${nl}${indent}</Popover>`;
+
     default:
       return `${indent}{/* ${type} */}`;
   }
@@ -483,45 +521,36 @@ function renderLayoutNode(ln: LayoutNode, indent: string): string {
 
   switch (node.type) {
     case 'Card': {
-      const cardSx = { ...sx };
-      delete cardSx.bgcolor; // Card handles its own bg
-      const sxStr = sxToInline(cardSx, indent);
+      const styleStr = styleToInline(sx, indent);
       return [
-        `${indent}<Card elevation={${node.props.elevation ?? 1}}${sxStr}>`,
-        node.props.title ? `${childIndent}<CardHeader title="${node.props.title}" />` : '',
-        `${childIndent}<CardContent>`,
-        `${childIndent}  <Stack direction="${direction}" spacing={${spacing}}>`,
+        `${indent}<Card title="${node.props.title ?? ''}"${node.props.bordered !== false ? ' bordered' : ''}${node.props.hoverable ? ' hoverable' : ''}${styleStr}>`,
+        `${childIndent}<Stack direction="${direction}" spacing={${spacing}}>`,
         childCode,
-        `${childIndent}  </Stack>`,
-        `${childIndent}</CardContent>`,
+        `${childIndent}</Stack>`,
         `${indent}</Card>`,
       ].filter(Boolean).join(nl);
     }
 
     case 'Paper': {
-      const sxStr = sxToInline({ p: 2, ...sx }, indent);
+      const styleStr = styleToInline({ padding: 16, ...sx }, indent);
       return [
-        `${indent}<Paper elevation={${node.props.elevation ?? 1}} variant="${node.props.variant ?? 'elevation'}"${sxStr}>`,
+        `${indent}<Section title="${node.props.title ?? ''}"${node.props.bordered !== false ? ' bordered' : ''}${styleStr}>`,
         `${childIndent}<Stack direction="${direction}" spacing={${spacing}}>`,
         childCode,
         `${childIndent}</Stack>`,
-        `${indent}</Paper>`,
+        `${indent}</Section>`,
       ].join(nl);
     }
 
     case 'Accordion': {
-      const sxStr = sxToInline(sx, indent);
       return [
-        `${indent}<Accordion${node.props.defaultExpanded ? ' defaultExpanded' : ''}${sxStr}>`,
-        `${childIndent}<AccordionSummary expandIcon={<ExpandMoreIcon />}>`,
-        `${childIndent}  <Typography>${node.props.title}</Typography>`,
-        `${childIndent}</AccordionSummary>`,
-        `${childIndent}<AccordionDetails>`,
+        `${indent}<Collapse${node.props.defaultExpanded ? ' defaultActiveKey={["1"]}' : ''}${node.props.bordered !== false ? ' bordered' : ''}>`,
+        `${childIndent}<Collapse.Panel header="${node.props.title}" key="1">`,
         `${childIndent}  <Stack direction="${direction}" spacing={${spacing}}>`,
         childCode,
         `${childIndent}  </Stack>`,
-        `${childIndent}</AccordionDetails>`,
-        `${indent}</Accordion>`,
+        `${childIndent}</Collapse.Panel>`,
+        `${indent}</Collapse>`,
       ].join(nl);
     }
 
@@ -584,31 +613,23 @@ function renderLeafContainer(ln: LayoutNode, indent: string): string {
 
   switch (node.type) {
     case 'Card': {
-      const sxStr = sxToInline(sx, indent);
       return [
-        `${indent}<Card elevation={${node.props.elevation ?? 1}}${sxStr}>`,
-        node.props.title ? `${indent}  <CardHeader title="${node.props.title}" />` : '',
-        `${indent}  <CardContent>`,
-        `${indent}    <Typography variant="body2" color="text.secondary">${node.props.content ?? ''}</Typography>`,
-        `${indent}  </CardContent>`,
+        `${indent}<Card title="${node.props.title ?? ''}"${node.props.bordered !== false ? ' bordered' : ''}${node.props.hoverable ? ' hoverable' : ''}>`,
+        `${indent}  {/* Card content */}`,
         `${indent}</Card>`,
       ].filter(Boolean).join(nl);
     }
     case 'Paper': {
-      const sxStr = sxToInline({ p: 2, ...sx }, indent);
-      return `${indent}<Paper elevation={${node.props.elevation ?? 1}} variant="${node.props.variant ?? 'elevation'}"${sxStr} />`;
+      const styleStr = styleToInline({ padding: 16, ...sx }, indent);
+      return `${indent}<Section title="${node.props.title ?? ''}"${node.props.bordered !== false ? ' bordered' : ''}${styleStr} />`;
     }
     case 'Accordion': {
-      const sxStr = sxToInline(sx, indent);
       return [
-        `${indent}<Accordion${node.props.defaultExpanded ? ' defaultExpanded' : ''}${sxStr}>`,
-        `${indent}  <AccordionSummary expandIcon={<ExpandMoreIcon />}>`,
-        `${indent}    <Typography>${node.props.title}</Typography>`,
-        `${indent}  </AccordionSummary>`,
-        `${indent}  <AccordionDetails>`,
-        `${indent}    <Typography variant="body2">${node.props.content ?? ''}</Typography>`,
-        `${indent}  </AccordionDetails>`,
-        `${indent}</Accordion>`,
+        `${indent}<Collapse${node.props.defaultExpanded ? ' defaultActiveKey={["1"]}' : ''}${node.props.bordered !== false ? ' bordered' : ''}>`,
+        `${indent}  <Collapse.Panel header="${node.props.title}" key="1">`,
+        `${indent}    <p>${node.props.content ?? ''}</p>`,
+        `${indent}  </Collapse.Panel>`,
+        `${indent}</Collapse>`,
       ].join(nl);
     }
     case 'Box': {
@@ -653,27 +674,6 @@ function estimateColumns(items: LayoutNode[]): number {
   }
   rows.push([currentCount]);
   return Math.max(...rows.map(r => r[0]));
-}
-
-/* --- Main generator ----------------------------------------- */
-
-function collectDrawerStates(tree: LayoutNode[]): string[] {
-  const states: string[] = [];
-  function walk(nodes: LayoutNode[]) {
-    for (const ln of nodes) {
-      if (ln.node.type === 'Drawer') {
-        const menuItems = (ln.node.props.menuItems as string[]) || [];
-        const menuTree = buildCodegenMenuTree(menuItems);
-        for (const n of menuTree) {
-          const result = renderMenuNode(n, '', '');
-          states.push(...result.states);
-        }
-      }
-      if (ln.children.length > 0) walk(ln.children);
-    }
-  }
-  walk(tree);
-  return states;
 }
 
 /* ─── Band-based flex layout helpers ───────────────────────── */
@@ -778,7 +778,6 @@ function renderBands(bands: Band[], frameW: number, baseIndent: string): string 
         if (vertOffset > 0) itemSx.push(`mt: ${vertOffset}`);
 
         if (ci === 0) {
-          // First item — offset from left edge
           const ml = pxToSpacing(ln.relX);
           if (ml > 0) itemSx.push(`ml: ${ml}`);
         } else {
@@ -786,7 +785,6 @@ function renderBands(bands: Band[], frameW: number, baseIndent: string): string 
           const remainingSpace = frameW - prevRight;
 
           if (gapFromPrev > remainingSpace * 0.4) {
-            // Large gap → insert a flex spacer (real-world pattern)
             lines.push(`${baseIndent}  <Box sx={{ flex: 1 }} />`);
             const mr = pxToSpacing(frameW - (ln.relX + w));
             if (mr > 0 && mr < pxToSpacing(frameW * 0.35)) itemSx.push(`mr: ${mr}`);
@@ -821,32 +819,28 @@ export function generateReactCode(nodes: CanvasNode[], frame?: DeviceFrame): str
   const tree = buildLayoutTree(nodes, ox, oy);
 
   // Collect imports from the tree
-  const { mui, icons } = collectImports(tree);
+  const { icg, mui } = collectImports(tree);
   // Always need Box for layout wrapper
   mui.add('Box');
 
   // Build code
   let code = `import React from 'react';\n`;
+
+  // ICG imports
+  const icgArr = Array.from(icg).sort();
+  if (icgArr.length > 0) {
+    code += `import {\n  ${icgArr.join(',\n  ')}\n} from '@citi-icg-172888/icgds-react';\n`;
+  }
+
+  // MUI layout imports
   const muiArr = Array.from(mui).sort();
   if (muiArr.length > 0) {
     code += `import {\n  ${muiArr.join(',\n  ')}\n} from '@mui/material';\n`;
   }
-  const iconArr = Array.from(icons).sort();
-  if (iconArr.length > 0) {
-    code += `import {\n  ${iconArr.map(i => `${i} as ${i}Icon`).join(',\n  ')}\n} from '@mui/icons-material';\n`;
-  }
-
-  // Collect any nested drawer state variables needed
-  const drawerStates = collectDrawerStates(tree);
 
   code += `\nconst GeneratedPage: React.FC = () => {\n`;
-  if (drawerStates.length > 0) {
-    for (const s of drawerStates) {
-      code += `  const [${s}, set${s.charAt(0).toUpperCase() + s.slice(1)}] = React.useState(false);\n`;
-    }
-    code += `\n`;
-  }
   code += `  return (\n`;
+
   const frameW = frame?.width ?? 1280;
   const frameH = frame?.height ?? 800;
   const frameBg = frame?.bgColor && frame.bgColor !== '#ffffff' ? `, bgcolor: '${frame.bgColor}'` : '';

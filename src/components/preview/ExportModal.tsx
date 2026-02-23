@@ -86,7 +86,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, onClose }) => {
             <Typography variant="subtitle1" gutterBottom>Getting Started</Typography>
             <Typography variant="body2" component="ol" sx={{ pl: 2 }}>
               <li>Create a new React project: <code>npm create vite@latest my-app -- --template react-ts</code></li>
-              <li>Install MUI: <code>npm install @mui/material @mui/icons-material @emotion/react @emotion/styled</code></li>
+              <li>Install dependencies: <code>npm install @citi-icg-172888/icgds-react @mui/material @emotion/react @emotion/styled</code></li>
               <li>Copy the generated code into <code>src/GeneratedPage.tsx</code></li>
               <li>Import and render <code>{'<GeneratedPage />'}</code> in your App.tsx</li>
               <li>Run <code>npm run dev</code></li>

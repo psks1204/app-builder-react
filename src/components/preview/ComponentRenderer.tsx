@@ -1,175 +1,93 @@
 import React from 'react';
+// ── ICG Design System components (canvas rendering) ──────────
 import {
-  Button, IconButton, ButtonGroup,
-  TextField, Select, MenuItem, FormControl, InputLabel,
-  Checkbox, Radio, RadioGroup, Switch, FormControlLabel, FormLabel,
-  Slider, Rating, Autocomplete, Fab,
-  Typography, Avatar, Badge, Chip, Divider,
-  List, ListItem, ListItemText, ListItemButton, Collapse,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Tooltip, Paper, Card, CardContent, CardHeader,
-  Accordion, AccordionSummary, AccordionDetails,
-  AppBar, Toolbar, Tabs, Tab, Breadcrumbs, Link,
-  Pagination, Stepper, Step, StepLabel,
-  BottomNavigation, BottomNavigationAction, SpeedDial, SpeedDialAction,
-  Alert, Snackbar, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
-  CircularProgress, LinearProgress, Skeleton,
-  Box, Stack, Grid, Container,
-} from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  ChevronRight as ChevronRightIcon,
-  Star as StarIcon,
-  Add as AddIcon,
-  Restore as RestoreIcon,
-  Favorite as FavoriteIcon,
-  LocationOn as LocationIcon,
-  Edit as EditIcon,
-  Share as ShareIcon,
-  Print as PrintIcon,
-  Mail as MailIcon,
-} from '@mui/icons-material';
+  Button as IcgButton,
+  Input as IcgInput,
+  Select as IcgSelect,
+  Checkbox as IcgCheckbox,
+  Radio as IcgRadio,
+  Switch as IcgSwitch,
+  Slider as IcgSlider,
+  DatePicker as IcgDatePicker,
+  Upload as IcgUpload,
+  Avatar as IcgAvatar,
+  Badge as IcgBadge,
+  Tag as IcgTag,
+  Carousel as IcgCarousel,
+  Card as IcgCard,
+  Section as IcgSection,
+  Collapse as IcgCollapse,
+  Menu as IcgMenu,
+  Tabs as IcgTabs,
+  Breadcrumb as IcgBreadcrumb,
+  Pagination as IcgPagination,
+  Stepper as IcgStepper,
+  Dropdown as IcgDropdown,
+  Alert as IcgAlert,
+  Modal as IcgModal,
+  Loading as IcgLoading,
+  Tooltip as IcgTooltip,
+  Popover as IcgPopover,
+  Table as IcgTable,
+  Icon as IcgIcon,
+  // Media as IcgMedia,  // uncomment when available
+} from '@citi-icg-172888/icgds-react';
+
+// ── MUI — used ONLY for Layout containers + builder internals ──
+import { Box, Stack, Grid, Container, Typography } from '@mui/material';
 import type { CanvasNode } from '../../store/types';
 
-/* ── Small stateful wrappers for interactive preview ────── */
-const InteractiveTabs: React.FC<{ tabs: string[]; color: string; variant: string; sx: Record<string, unknown> }> = ({ tabs, color, variant, sx }) => {
-  const [value, setValue] = React.useState(0);
-  return (
-    <Box sx={sx}>
-      <Tabs value={value} onChange={(_, v) => setValue(v)} textColor={color as 'primary'} indicatorColor={color as 'primary'} variant={variant as 'standard'}>
-        {tabs?.map((t, i) => <Tab key={i} label={t} />)}
-      </Tabs>
-    </Box>
-  );
-};
+// ================================================================
+//  Helpers
+// ================================================================
 
-const InteractiveBottomNav: React.FC<{ items: string[]; showLabels: boolean; sx: Record<string, unknown> }> = ({ items, showLabels, sx }) => {
-  const [value, setValue] = React.useState(0);
-  const icons = [<RestoreIcon key="r" />, <FavoriteIcon key="f" />, <LocationIcon key="l" />];
-  return (
-    <BottomNavigation showLabels={showLabels} value={value} onChange={(_, v) => setValue(v)} sx={sx}>
-      {items?.map((item, i) => (
-        <BottomNavigationAction key={i} label={item} icon={icons[i % 3]} />
-      ))}
-    </BottomNavigation>
-  );
-};
+/** Convert sx shorthand to React.CSSProperties for ICG style prop */
+const sxToStyle = (sx: Record<string, unknown>): React.CSSProperties => {
+  const s: React.CSSProperties = {};
+  const map: Record<string, keyof React.CSSProperties> = {
+    p: 'padding', pt: 'paddingTop', pr: 'paddingRight', pb: 'paddingBottom', pl: 'paddingLeft',
+    px: 'paddingLeft', py: 'paddingTop',
+    m: 'margin', mt: 'marginTop', mr: 'marginRight', mb: 'marginBottom', ml: 'marginLeft',
+    mx: 'marginLeft', my: 'marginTop',
+    bgcolor: 'backgroundColor', color: 'color',
+    border: 'border', borderRadius: 'borderRadius',
+    width: 'width', height: 'height', minWidth: 'minWidth', minHeight: 'minHeight',
+    maxWidth: 'maxWidth', maxHeight: 'maxHeight',
+    display: 'display', flexDirection: 'flexDirection', alignItems: 'alignItems',
+    justifyContent: 'justifyContent', gap: 'gap', flex: 'flex',
+    overflow: 'overflow', opacity: 'opacity', boxShadow: 'boxShadow',
+    position: 'position', top: 'top', right: 'right', bottom: 'bottom', left: 'left',
+    zIndex: 'zIndex', textAlign: 'textAlign',
+  };
 
-const InteractivePagination: React.FC<{ count: number; color: string; shape: string; variant: string; size: string; sx: Record<string, unknown> }> = ({ count, color, shape, variant, size, sx }) => {
-  const [page, setPage] = React.useState(1);
-  return (
-    <Pagination
-      page={page}
-      onChange={(_, v) => setPage(v)}
-      count={count}
-      color={color as 'primary'}
-      shape={shape as 'rounded'}
-      variant={variant as 'outlined'}
-      size={size as 'medium'}
-      sx={sx}
-    />
-  );
-};
+  for (const [key, val] of Object.entries(sx)) {
+    if (val === undefined || val === null || val === '') continue;
+    // Skip MUI-specific class override selectors
+    if (key.startsWith('&')) continue;
 
-/* ── Nested menu tree builder ────────────────────────────── */
-interface MenuNode {
-  label: string;
-  children: MenuNode[];
-}
-
-const buildMenuTree = (items: string[]): MenuNode[] => {
-  const root: MenuNode[] = [];
-  for (const raw of items) {
-    const parts = raw.split('>').map((s) => s.trim()).filter(Boolean);
-    let level = root;
-    for (let i = 0; i < parts.length; i++) {
-      let existing = level.find((n) => n.label === parts[i]);
-      if (!existing) {
-        existing = { label: parts[i], children: [] };
-        level.push(existing);
+    const cssProp = map[key];
+    if (cssProp) {
+      // Convert spacing units (MUI uses 8px multiples for p, m, etc.)
+      if (['p', 'pt', 'pr', 'pb', 'pl', 'px', 'py', 'm', 'mt', 'mr', 'mb', 'ml', 'mx', 'my'].includes(key) && typeof val === 'number') {
+        (s as Record<string, unknown>)[cssProp] = val * 8;
+        // Handle px, py, mx, my (set both axes)
+        if (key === 'px') s.paddingRight = val * 8;
+        if (key === 'py') s.paddingBottom = val * 8;
+        if (key === 'mx') s.marginRight = val * 8;
+        if (key === 'my') s.marginBottom = val * 8;
+      } else {
+        (s as Record<string, unknown>)[cssProp] = val;
       }
-      level = existing.children;
+    }
+    // Also pass font-related properties
+    if (['fontSize', 'fontWeight', 'fontFamily', 'fontStyle', 'lineHeight', 'letterSpacing', 'textTransform'].includes(key)) {
+      (s as Record<string, unknown>)[key as keyof React.CSSProperties] = val;
     }
   }
-  return root;
+  return s;
 };
 
-/* ── Recursive nested menu renderer ─────────────────────── */
-const NestedMenuItem: React.FC<{
-  node: MenuNode;
-  depth: number;
-  selected: string;
-  onSelect: (label: string) => void;
-  interactive?: boolean;
-  fontStyle?: React.CSSProperties;
-}> = ({ node, depth, selected, onSelect, interactive, fontStyle }) => {
-  const [open, setOpen] = React.useState(false);
-  const hasChildren = node.children.length > 0;
-  const fullKey = node.label;
-
-  if (hasChildren) {
-    return (
-      <>
-        <ListItemButton
-          onClick={() => { if (interactive) setOpen((o) => !o); onSelect(fullKey); }}
-          sx={{
-            pl: 2 + depth * 2,
-            bgcolor: selected === fullKey ? 'action.selected' : 'transparent',
-            '&:hover': { bgcolor: selected === fullKey ? 'action.selected' : 'action.hover' },
-          }}
-        >
-          <ListItemText primary={node.label} primaryTypographyProps={{ variant: 'body2', style: fontStyle }} />
-          {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-        </ListItemButton>
-        <Collapse in={open} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding dense>
-            {node.children.map((child, i) => (
-              <NestedMenuItem key={i} node={child} depth={depth + 1} selected={selected} onSelect={onSelect} interactive={interactive} fontStyle={fontStyle} />
-            ))}
-          </List>
-        </Collapse>
-      </>
-    );
-  }
-
-  return (
-    <ListItemButton
-      onClick={() => onSelect(fullKey)}
-      sx={{
-        pl: 2 + depth * 2,
-        bgcolor: selected === fullKey ? 'action.selected' : 'transparent',
-        '&:hover': { bgcolor: selected === fullKey ? 'action.selected' : 'action.hover' },
-      }}
-    >
-      <ListItemText primary={node.label} primaryTypographyProps={{ variant: 'body2', style: fontStyle }} />
-    </ListItemButton>
-  );
-};
-
-const InteractiveDrawer: React.FC<{ title: string; menuItems: string[]; width: number; sx: Record<string, unknown>; fontStyle?: React.CSSProperties }> = ({ title, menuItems, width, sx, fontStyle }) => {
-  const [selected, setSelected] = React.useState('');
-  const tree = React.useMemo(() => buildMenuTree(menuItems), [menuItems]);
-  return (
-    <Paper variant="outlined" sx={{ width, height: '100%', overflow: 'auto', ...sx }} style={fontStyle}>
-      <Typography variant="subtitle2" sx={{ px: 2, pt: 2, pb: 1 }} style={fontStyle}>{title}</Typography>
-      <Divider />
-      <List dense disablePadding>
-        {tree.map((node, i) => (
-          <NestedMenuItem key={i} node={node} depth={0} selected={selected} onSelect={setSelected} interactive fontStyle={fontStyle} />
-        ))}
-      </List>
-    </Paper>
-  );
-};
-
-interface Props {
-  node: CanvasNode;
-  interactive?: boolean;
-}
-
-/* Extract font-related properties from sx into an inline style object.
-   Inline styles guarantee override of MUI variant CSS classes. */
+/** Extract font-related properties from sx into an inline style object. */
 const fontStyleFromSx = (sx: Record<string, unknown>): React.CSSProperties => {
   const s: React.CSSProperties = {};
   if (sx.fontSize !== undefined) s.fontSize = typeof sx.fontSize === 'number' ? sx.fontSize : (sx.fontSize as string);
@@ -182,522 +100,690 @@ const fontStyleFromSx = (sx: Record<string, unknown>): React.CSSProperties => {
   return s;
 };
 
-/** Build an sx patch that forces font overrides on ALL inner MUI text elements.
- *  This is needed for compound components (Card, Drawer, Dialog, etc.) whose
- *  inner Typography / ListItemText elements set their own font classes. */
-const fontSxOverride = (fs: React.CSSProperties): Record<string, unknown> => {
-  if (Object.keys(fs).length === 0) return {};
-  return {
-    '& .MuiTypography-root, & .MuiListItemText-primary, & .MuiListItemText-secondary, & .MuiButton-root, & .MuiTab-root, & .MuiChip-label, & .MuiAlert-message, & .MuiTableCell-root, & .MuiAccordionSummary-content, & .MuiBreadcrumbs-li, & .MuiLink-root': fs,
-  };
+// ================================================================
+//  Interactive Wrappers (stateful components for preview)
+// ================================================================
+
+/* ── Interactive Tabs using ICG Tabs ──────────────────────── */
+const InteractiveTabs: React.FC<{ tabs: string[]; type: string; size: string; style: React.CSSProperties }> = ({ tabs, type, size, style }) => {
+  const [activeKey, setActiveKey] = React.useState('0');
+  const items = tabs?.map((t, i) => ({ key: String(i), label: t, children: null })) ?? [];
+  return (
+    <div style={style}>
+      <IcgTabs
+        activeKey={activeKey}
+        onChange={(key: string) => setActiveKey(key)}
+        type={type as 'line' | 'card'}
+        size={size as 'small' | 'default' | 'large'}
+        items={items}
+      />
+    </div>
+  );
 };
+
+/* ── Interactive Pagination using ICG Pagination ──────────── */
+const InteractivePagination: React.FC<{ total: number; pageSize: number; size: string; simple: boolean; style: React.CSSProperties }> = ({ total, pageSize, size, simple, style }) => {
+  const [current, setCurrent] = React.useState(1);
+  return (
+    <div style={style}>
+      <IcgPagination
+        current={current}
+        onChange={(page: number) => setCurrent(page)}
+        total={total}
+        pageSize={pageSize}
+        size={size as 'default' | 'small'}
+        simple={simple}
+      />
+    </div>
+  );
+};
+
+/* ── Nested menu tree builder (shared) ────────────────────── */
+interface MenuNode {
+  label: string;
+  key: string;
+  children: MenuNode[];
+}
+
+const buildMenuTree = (items: string[]): MenuNode[] => {
+  const root: MenuNode[] = [];
+  let keyCounter = 0;
+  for (const raw of items) {
+    const parts = raw.split('>').map((s) => s.trim()).filter(Boolean);
+    let level = root;
+    for (let i = 0; i < parts.length; i++) {
+      let existing = level.find((n) => n.label === parts[i]);
+      if (!existing) {
+        existing = { label: parts[i], key: `menu-${keyCounter++}`, children: [] };
+        level.push(existing);
+      }
+      level = existing.children;
+    }
+  }
+  return root;
+};
+
+/** Convert MenuNode tree to ICG Menu items format */
+const toMenuItems = (nodes: MenuNode[]): Array<{ key: string; label: string; children?: Array<{ key: string; label: string }> }> => {
+  return nodes.map(n => {
+    if (n.children.length > 0) {
+      return { key: n.key, label: n.label, children: toMenuItems(n.children) };
+    }
+    return { key: n.key, label: n.label };
+  });
+};
+
+/* ── Interactive Side Menu using ICG Menu ──────────────────── */
+const InteractiveSideMenu: React.FC<{ title: string; menuItems: string[]; mode: string; theme: string; style: React.CSSProperties }> = ({ title, menuItems, mode, theme, style }) => {
+  const [selectedKeys, setSelectedKeys] = React.useState<string[]>([]);
+  const tree = React.useMemo(() => buildMenuTree(menuItems), [menuItems]);
+  const items = React.useMemo(() => toMenuItems(tree), [tree]);
+  return (
+    <div style={{ height: '100%', overflow: 'auto', ...style }}>
+      <div style={{ padding: '12px 16px 8px', fontWeight: 600, fontSize: 14, borderBottom: '1px solid #e8e8e8' }}>{title}</div>
+      <IcgMenu
+        mode={mode as 'inline' | 'vertical'}
+        theme={theme as 'light' | 'dark'}
+        selectedKeys={selectedKeys}
+        onSelect={(info: { selectedKeys: string[] }) => setSelectedKeys(info.selectedKeys)}
+        items={items as any}
+        style={{ border: 'none' }}
+      />
+    </div>
+  );
+};
+
+// ================================================================
+//  Main Renderer
+// ================================================================
+
+interface Props {
+  node: CanvasNode;
+  interactive?: boolean;
+}
 
 const ComponentRenderer: React.FC<Props> = ({ node, interactive }) => {
   const { type, props, sx: rawSx } = node;
   const sx = rawSx ?? {};
+  const convertedStyle = sxToStyle(sx);
   const fontStyle = fontStyleFromSx(sx);
-  const fontOverrideSx = fontSxOverride(fontStyle);
+  const mergedStyle = { ...convertedStyle, ...fontStyle };
 
   switch (type) {
     /* ── Inputs ──────────────────────────────────────────── */
     case 'Button':
       return (
-        <Button
-          variant={props.variant as 'contained' | 'outlined' | 'text'}
-          color={props.color as 'primary'}
-          size={props.size as 'small' | 'medium' | 'large'}
+        <IcgButton
+          type={props.type as 'primary' | 'default' | 'dashed' | 'text' | 'link'}
+          size={props.size as 'small' | 'middle' | 'large'}
           disabled={props.disabled as boolean}
-          sx={{ ...sx, textTransform: 'none' }}
-          style={fontStyle}
-          fullWidth
+          danger={props.danger as boolean}
+          block={props.block as boolean}
+          shape={props.shape as 'default' | 'circle' | 'round'}
+          style={mergedStyle}
         >
           {props.label as string}
-        </Button>
+        </IcgButton>
       );
 
     case 'IconButton':
       return (
-        <IconButton
-          color={props.color as 'primary'}
-          size={props.size as 'small' | 'medium' | 'large'}
+        <IcgButton
+          type={props.type as 'primary' | 'default'}
+          shape={props.shape as 'circle' | 'round'}
+          size={props.size as 'small' | 'middle' | 'large'}
           disabled={props.disabled as boolean}
-          sx={sx}
-          style={fontStyle}
-        >
-          <StarIcon />
-        </IconButton>
+          icon={<IcgIcon type={props.iconType as string} />}
+          style={mergedStyle}
+        />
       );
 
     case 'ButtonGroup':
       return (
-        <ButtonGroup
-          variant={props.variant as 'outlined'}
-          color={props.color as 'primary'}
-          sx={{ ...sx, ...fontOverrideSx }}
-          style={fontStyle}
-        >
+        <IcgButton.Group size={props.size as 'small' | 'middle' | 'large'} style={mergedStyle}>
           {(props.buttons as string[])?.map((b, i) => (
-            <Button key={i} style={fontStyle}>{b}</Button>
+            <IcgButton key={i}>{b}</IcgButton>
           ))}
-        </ButtonGroup>
+        </IcgButton.Group>
       );
 
     case 'TextField':
       return (
-        <TextField
-          label={props.label as string}
+        <IcgInput
           placeholder={props.placeholder as string}
-          variant={props.variant as 'outlined' | 'filled' | 'standard'}
-          size={props.size as 'small' | 'medium'}
+          size={props.size as 'small' | 'middle' | 'large'}
           disabled={props.disabled as boolean}
-          fullWidth={props.fullWidth as boolean}
-          sx={sx}
-          inputProps={{ style: fontStyle }}
+          allowClear={props.allowClear as boolean}
+          style={{ width: '100%', ...mergedStyle }}
         />
       );
 
     case 'Select':
       return (
-        <FormControl fullWidth size="small" sx={sx}>
-          <InputLabel>{props.label as string}</InputLabel>
-          <Select label={props.label as string} defaultValue="">
-            {(props.options as string[])?.map((o, i) => (
-              <MenuItem key={i} value={o}>{o}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <IcgSelect
+          placeholder={props.placeholder as string}
+          size={props.size as 'small' | 'middle' | 'large'}
+          disabled={props.disabled as boolean}
+          allowClear={props.allowClear as boolean}
+          showSearch={props.showSearch as boolean}
+          options={(props.options as string[])?.map(o => ({ value: o, label: o }))}
+          style={{ width: '100%', ...mergedStyle }}
+        />
       );
 
     case 'Checkbox':
       return (
-        <FormControlLabel
-          control={
-            interactive
-              ? <Checkbox defaultChecked={props.checked as boolean} disabled={props.disabled as boolean} color={props.color as 'primary'} />
-              : <Checkbox checked={props.checked as boolean} disabled={props.disabled as boolean} color={props.color as 'primary'} />
-          }
-          label={props.label as string}
-          sx={sx}
-          style={fontStyle}
-        />
+        <div style={mergedStyle}>
+          <IcgCheckbox
+            {...(interactive ? { defaultChecked: props.checked as boolean } : { checked: props.checked as boolean })}
+            disabled={props.disabled as boolean}
+          >
+            {props.label as string}
+          </IcgCheckbox>
+        </div>
       );
 
-    case 'Radio':
+    case 'Radio': {
+      const radioOptions = (props.options as string[])?.map(o => o) ?? [];
       return (
-        <FormControl sx={sx} style={fontStyle}>
-          <FormLabel style={fontStyle}>{props.label as string}</FormLabel>
-          <RadioGroup row={props.row as boolean} defaultValue={(props.options as string[])?.[0]}>
-            {(props.options as string[])?.map((o, i) => (
-              <FormControlLabel key={i} value={o} control={<Radio />} label={o} style={fontStyle} />
-            ))}
-          </RadioGroup>
-        </FormControl>
+        <div style={mergedStyle}>
+          <div style={{ marginBottom: 4, fontWeight: 500 }}>{props.label as string}</div>
+          <IcgRadio.Group
+            options={radioOptions}
+            optionType={props.optionType as 'default' | 'button'}
+            buttonStyle={props.buttonStyle as 'outline' | 'solid'}
+            {...(interactive ? { defaultValue: radioOptions[0] } : { value: radioOptions[0] })}
+          />
+        </div>
       );
+    }
 
     case 'Switch':
       return (
-        <FormControlLabel
-          control={
-            interactive
-              ? <Switch defaultChecked={props.checked as boolean} disabled={props.disabled as boolean} color={props.color as 'primary'} />
-              : <Switch checked={props.checked as boolean} disabled={props.disabled as boolean} color={props.color as 'primary'} />
-          }
-          label={props.label as string}
-          sx={sx}
-          style={fontStyle}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, ...mergedStyle }}>
+          <IcgSwitch
+            {...(interactive ? { defaultChecked: props.checked as boolean } : { checked: props.checked as boolean })}
+            disabled={props.disabled as boolean}
+            size={props.size as 'default' | 'small'}
+          />
+          <span>{props.label as string}</span>
+        </div>
       );
 
     case 'Slider':
       return (
-        <Box sx={{ px: 1, ...sx }}>
-          <Slider
+        <div style={{ padding: '0 8px', ...mergedStyle }}>
+          <IcgSlider
             {...(interactive ? { defaultValue: props.value as number } : { value: props.value as number })}
             min={props.min as number}
             max={props.max as number}
             step={props.step as number}
             disabled={props.disabled as boolean}
-            color={props.color as 'primary'}
-            valueLabelDisplay="auto"
           />
-        </Box>
+        </div>
       );
 
-    case 'Rating':
+    case 'DatePicker':
       return (
-        <Rating
-          {...(interactive ? { defaultValue: props.value as number } : { value: props.value as number })}
-          max={props.max as number}
-          precision={Number(props.precision) || 1}
-          readOnly={interactive ? false : (props.readOnly as boolean)}
-          disabled={props.disabled as boolean}
-          size={props.size as 'small' | 'medium' | 'large'}
-          sx={sx}
-        />
+        <div style={mergedStyle}>
+          <IcgDatePicker
+            placeholder={props.placeholder as string}
+            size={props.size as 'small' | 'middle' | 'large'}
+            disabled={props.disabled as boolean}
+            picker={props.picker as 'date' | 'week' | 'month' | 'year'}
+            style={{ width: '100%' }}
+          />
+        </div>
       );
 
-    case 'Autocomplete':
+    case 'Upload':
       return (
-        <Autocomplete
-          options={props.options as string[]}
-          renderInput={(params) => <TextField {...params} label={props.label as string} size="small" />}
-          sx={sx}
-          size="small"
-        />
-      );
-
-    case 'Fab':
-      return (
-        <Fab
-          color={props.color as 'primary'}
-          size={props.size as 'small' | 'medium' | 'large'}
-          sx={sx}
-        >
-          <AddIcon />
-        </Fab>
+        <div style={mergedStyle}>
+          <IcgUpload listType={props.listType as 'text' | 'picture' | 'picture-card'}>
+            <IcgButton>
+              {props.text as string}
+            </IcgButton>
+          </IcgUpload>
+          {(props.hint as string) && (
+            <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>{props.hint as string}</div>
+          )}
+        </div>
       );
 
     /* ── Data Display ────────────────────────────────────── */
-    case 'Typography':
-      return (
-        <Typography
-          variant={props.variant as 'body1'}
-          color={props.color as string}
-          align={props.align as 'left' | 'center' | 'right'}
-          gutterBottom={props.gutterBottom as boolean}
-          sx={sx}
-          style={fontStyle}
-        >
-          {props.text as string}
-        </Typography>
-      );
+    case 'Typography': {
+      const level = props.level as string;
+      const tagMap: Record<string, keyof JSX.IntrinsicElements> = {
+        h1: 'h1', h2: 'h2', h3: 'h3', h4: 'h4', h5: 'h5', body: 'p', caption: 'span',
+      };
+      const sizeMap: Record<string, number> = {
+        h1: 32, h2: 28, h3: 24, h4: 20, h5: 16, body: 14, caption: 12,
+      };
+      const weightMap: Record<string, number> = {
+        h1: 700, h2: 700, h3: 600, h4: 600, h5: 500, body: 400, caption: 400,
+      };
+      const Tag = (tagMap[level] || 'p') as keyof JSX.IntrinsicElements;
+      return React.createElement(Tag, {
+        style: {
+          margin: 0,
+          fontSize: fontStyle.fontSize || sizeMap[level] || 14,
+          fontWeight: fontStyle.fontWeight || weightMap[level] || 400,
+          textAlign: (props.align as React.CSSProperties['textAlign']) || 'left',
+          ...mergedStyle,
+        },
+      }, props.text as string);
+    }
 
     case 'Avatar':
       return (
-        <Avatar
-          variant={props.variant as 'circular'}
-          sx={{ bgcolor: props.bgColor as string, width: '100%', height: '100%', fontSize: 20, ...sx }}
+        <IcgAvatar
+          shape={props.shape as 'circle' | 'square'}
+          size={props.size as 'small' | 'default' | 'large'}
+          style={{ backgroundColor: props.bgColor as string, ...mergedStyle }}
         >
           {props.text as string}
-        </Avatar>
+        </IcgAvatar>
       );
 
     case 'Badge':
       return (
-        <Badge
-          badgeContent={props.badgeContent as string}
-          color={props.color as 'primary'}
-          variant={props.variant as 'standard' | 'dot'}
-          sx={sx}
+        <div style={mergedStyle}>
+          <IcgBadge
+            count={props.dot ? undefined : (props.count as number)}
+            dot={props.dot as boolean}
+            status={props.status as 'success' | 'processing' | 'default' | 'error' | 'warning'}
+            showZero={props.showZero as boolean}
+          >
+            <div style={{ width: 32, height: 32, borderRadius: 4, backgroundColor: '#e8e8e8' }} />
+          </IcgBadge>
+        </div>
+      );
+
+    case 'Tag':
+      return (
+        <IcgTag
+          color={props.color as string}
+          closable={props.closable as boolean}
+          bordered={props.bordered as boolean}
+          style={mergedStyle}
         >
-          <MailIcon color="action" />
-        </Badge>
+          {props.label as string}
+        </IcgTag>
       );
 
-    case 'Chip':
+    case 'Divider': {
+      const divText = props.text as string;
+      if (divText) {
+        return (
+          <div style={{ width: '100%', ...mergedStyle }}>
+            <hr style={{
+              border: 'none',
+              borderTop: props.dashed ? '1px dashed #d9d9d9' : '1px solid #d9d9d9',
+              margin: '12px 0',
+              position: 'relative',
+            }} />
+            <span style={{
+              position: 'absolute',
+              background: '#fff',
+              padding: '0 8px',
+              fontSize: 14,
+              color: '#666',
+              left: props.orientation === 'left' ? '5%' : props.orientation === 'right' ? 'auto' : '50%',
+              right: props.orientation === 'right' ? '5%' : 'auto',
+              transform: props.orientation === 'center' ? 'translateX(-50%)' : 'none',
+              top: -10,
+            }}>
+              {divText}
+            </span>
+          </div>
+        );
+      }
       return (
-        <Chip
-          label={props.label as string}
-          variant={props.variant as 'filled' | 'outlined'}
-          color={props.color as 'primary'}
-          size={props.size as 'small' | 'medium'}
-          clickable={props.clickable as boolean}
-          onDelete={props.deletable ? () => {} : undefined}
-          sx={sx}
-          style={fontStyle}
-        />
+        <div style={{ width: props.type === 'vertical' ? 'auto' : '100%', height: props.type === 'vertical' ? '100%' : 'auto', ...mergedStyle }}>
+          <hr style={{
+            border: 'none',
+            borderTop: props.type === 'vertical' ? 'none' : (props.dashed ? '1px dashed #d9d9d9' : '1px solid #d9d9d9'),
+            borderLeft: props.type === 'vertical' ? (props.dashed ? '1px dashed #d9d9d9' : '1px solid #d9d9d9') : 'none',
+            margin: props.type === 'vertical' ? '0 8px' : '12px 0',
+            height: props.type === 'vertical' ? '100%' : 'auto',
+          }} />
+        </div>
       );
+    }
 
-    case 'Divider':
-      return props.text ? (
-        <Divider textAlign={props.textAlign as 'center'} sx={sx}>{props.text as string}</Divider>
-      ) : (
-        <Divider
-          orientation={props.orientation as 'horizontal' | 'vertical'}
-          variant={props.variant as 'fullWidth'}
-          sx={{ my: 1, ...sx }}
-        />
-      );
-
-    case 'List':
+    case 'List': {
+      const listItems = (props.items as string[]) ?? ['Item 1', 'Item 2', 'Item 3'];
       return (
-        <List dense={props.dense as boolean} sx={{ bgcolor: 'background.paper', ...sx, ...fontOverrideSx }} style={fontStyle}>
-          {(props.items as string[])?.map((item, i) => (
-            <ListItem key={i} divider={i < (props.items as string[]).length - 1}>
-              <ListItemText primary={item} primaryTypographyProps={{ style: fontStyle }} />
-            </ListItem>
+        <div style={{ border: (props.bordered as boolean) ? '1px solid #d9d9d9' : 'none', borderRadius: 4, ...mergedStyle }}>
+          {listItems.map((item, i) => (
+            <div
+              key={i}
+              style={{
+                padding: (props.size as string) === 'small' ? '8px 16px' : (props.size as string) === 'large' ? '16px 24px' : '12px 16px',
+                borderBottom: i < listItems.length - 1 ? '1px solid #f0f0f0' : 'none',
+                fontSize: 14,
+              }}
+            >
+              {item}
+            </div>
           ))}
-        </List>
+        </div>
       );
+    }
 
     case 'Table': {
       const columns = (props.columns as string[]) ?? ['#', 'Name', 'Email', 'Role'];
       const rows = (props.rows as string[]) ?? ['1,Alice,alice@mail.com,Admin', '2,Bob,bob@mail.com,User'];
+      const tableColumns = columns.map((col, i) => ({
+        title: col,
+        dataIndex: `col${i}`,
+        key: `col${i}`,
+      }));
+      const tableData = rows.map((row, ri) => {
+        const cells = String(row).split(',');
+        const record: Record<string, string> = { key: String(ri) };
+        columns.forEach((_, ci) => {
+          record[`col${ci}`] = cells[ci] ?? '';
+        });
+        return record;
+      });
       return (
-        <TableContainer component={Paper} sx={{ ...sx, ...fontOverrideSx }} style={fontStyle}>
-          <Table size={props.size as 'small' | 'medium'} stickyHeader={props.stickyHeader as boolean}>
-            <TableHead>
-              <TableRow>
-                {columns.map((col, i) => (
-                  <TableCell key={i} style={fontStyle}>{col}</TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((row, ri) => {
-                const cells = String(row).split(',');
-                return (
-                  <TableRow key={ri}>
-                    {columns.map((_, ci) => (
-                      <TableCell key={ci} style={fontStyle}>{cells[ci] ?? ''}</TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <div style={mergedStyle}>
+          <IcgTable
+            columns={tableColumns as any}
+            dataSource={tableData}
+            size={props.size as 'small' | 'middle' | 'large'}
+            bordered={props.bordered as boolean}
+            pagination={false}
+          />
+        </div>
       );
     }
 
     case 'Tooltip':
       return (
-        <Tooltip title={props.title as string} placement={props.placement as 'top'} arrow={props.arrow as boolean}>
-          <Button variant="outlined" size="small" sx={sx}>Hover me</Button>
-        </Tooltip>
+        <IcgTooltip title={props.title as string} placement={props.placement as 'top'}>
+          <IcgButton type="default" size="small" style={mergedStyle}>Hover me</IcgButton>
+        </IcgTooltip>
       );
 
     case 'Image':
       return (
-        <Box
-          component="img"
+        <img
           src={props.src as string}
           alt={props.alt as string}
-          sx={{ width: '100%', height: '100%', objectFit: props.objectFit as string, display: 'block', ...sx }}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: props.objectFit as React.CSSProperties['objectFit'],
+            display: 'block',
+            ...mergedStyle,
+          }}
         />
       );
+
+    case 'Carousel': {
+      const slides = (props.slides as string[]) ?? ['Slide 1', 'Slide 2', 'Slide 3'];
+      return (
+        <div style={mergedStyle}>
+          <IcgCarousel
+            autoplay={props.autoplay as boolean}
+            dots={props.dots as boolean}
+            effect={props.effect as 'scrollx' | 'fade'}
+          >
+            {slides.map((slide, i) => (
+              <div key={i}>
+                <div style={{
+                  height: 160,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: `hsl(${(i * 60 + 200) % 360}, 50%, 85%)`,
+                  fontSize: 18,
+                  fontWeight: 500,
+                }}>
+                  {slide}
+                </div>
+              </div>
+            ))}
+          </IcgCarousel>
+        </div>
+      );
+    }
 
     /* ── Surfaces ────────────────────────────────────────── */
     case 'Card':
       return (
-        <Card elevation={props.elevation as number} sx={{ height: '100%', ...sx, ...fontOverrideSx }} style={fontStyle}>
-          <CardHeader title={props.title as string} titleTypographyProps={{ variant: 'subtitle1', style: fontStyle }} />
-          <CardContent>
-            <Typography variant="body2" color="text.secondary" style={fontStyle}>{props.content as string}</Typography>
-          </CardContent>
-        </Card>
+        <IcgCard
+          title={props.title as string}
+          bordered={props.bordered as boolean}
+          hoverable={props.hoverable as boolean}
+          size={props.size as 'default' | 'small'}
+          style={{ height: '100%', ...mergedStyle }}
+        >
+          {/* Children will be rendered by CanvasItem */}
+        </IcgCard>
       );
 
     case 'Paper':
       return (
-        <Paper
-          elevation={props.elevation as number}
-          square={props.square as boolean}
-          variant={props.variant as 'elevation' | 'outlined'}
-          sx={{ height: '100%', ...sx }}
-        />
+        <IcgSection
+          title={props.title as string}
+          bordered={props.bordered as boolean}
+          size={props.size as 'default' | 'small' | 'large'}
+          style={{ height: '100%', ...mergedStyle }}
+        >
+          {/* Children will be rendered by CanvasItem */}
+        </IcgSection>
       );
 
-    case 'Accordion':
+    case 'Accordion': {
+      const defaultExpanded = props.defaultExpanded as boolean;
       return (
-        <Box sx={{ ...sx, ...fontOverrideSx }} style={fontStyle}>
-          <Accordion defaultExpanded={props.defaultExpanded as boolean}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography style={fontStyle}>{props.title as string}</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography variant="body2" style={fontStyle}>{props.content as string}</Typography>
-            </AccordionDetails>
-          </Accordion>
-        </Box>
-      );
-
-    /* ── Navigation ──────────────────────────────────────── */
-    case 'AppBar': {
-      const actions = (props.actions as string[]) ?? ['Login'];
-      return (
-        <AppBar position="static" color={props.color as 'primary'} sx={{ ...sx, ...fontOverrideSx }} style={fontStyle}>
-          <Toolbar variant="dense">
-            <Typography variant="h6" sx={{ flexGrow: 1 }} style={fontStyle}>{props.title as string}</Typography>
-            {actions.map((a, i) => (
-              <Button key={i} color="inherit" style={fontStyle}>{a}</Button>
-            ))}
-          </Toolbar>
-        </AppBar>
+        <div style={mergedStyle}>
+          <IcgCollapse
+            defaultActiveKey={defaultExpanded ? ['1'] : []}
+            bordered={props.bordered as boolean}
+          >
+            <IcgCollapse.Panel header={props.title as string} key="1">
+              <p>{props.content as string}</p>
+            </IcgCollapse.Panel>
+          </IcgCollapse>
+        </div>
       );
     }
 
-    case 'Tabs':
+    /* ── Navigation ──────────────────────────────────────── */
+    case 'AppBar': {
+      const menuItems = (props.items as string[]) ?? ['Home', 'Products', 'About'];
+      const items = menuItems.map((item, i) => ({ key: String(i), label: item }));
+      return (
+        <div style={mergedStyle}>
+          <IcgMenu
+            mode={props.mode as 'horizontal' | 'vertical' | 'inline'}
+            theme={props.theme as 'light' | 'dark'}
+            defaultSelectedKeys={['0']}
+            items={items as any}
+          />
+        </div>
+      );
+    }
+
+    case 'Tabs': {
+      const tabs = (props.tabs as string[]) ?? ['Tab 1', 'Tab 2', 'Tab 3'];
+      const items = tabs.map((t, i) => ({ key: String(i), label: t, children: null }));
       if (interactive) {
-        return <InteractiveTabs tabs={props.tabs as string[]} color={props.color as string} variant={props.variant as string} sx={sx} />;
+        return <InteractiveTabs tabs={tabs} type={props.type as string} size={props.size as string} style={mergedStyle} />;
       }
       return (
-        <Box sx={{ ...sx, ...fontOverrideSx }} style={fontStyle}>
-          <Tabs value={0} textColor={props.color as 'primary'} indicatorColor={props.color as 'primary'} variant={props.variant as 'standard'}>
-            {(props.tabs as string[])?.map((t, i) => <Tab key={i} label={t} style={fontStyle} />)}
-          </Tabs>
-        </Box>
+        <div style={mergedStyle}>
+          <IcgTabs
+            defaultActiveKey="0"
+            type={props.type as 'line' | 'card'}
+            size={props.size as 'small' | 'default' | 'large'}
+            tabPosition={props.tabPosition as 'top' | 'right' | 'bottom' | 'left'}
+            items={items}
+          />
+        </div>
       );
+    }
 
-    case 'Breadcrumbs':
+    case 'Breadcrumbs': {
+      const bcItems = (props.items as string[]) ?? ['Home', 'Category', 'Current'];
       return (
-        <Breadcrumbs sx={{ ...sx, ...fontOverrideSx }} style={fontStyle}>
-          {(props.items as string[])?.map((item, i, arr) =>
-            i === arr.length - 1
-              ? <Typography key={i} color="text.primary" style={fontStyle}>{item}</Typography>
-              : <Link key={i} underline="hover" color="inherit" href="#" style={fontStyle}>{item}</Link>
-          )}
-        </Breadcrumbs>
+        <div style={mergedStyle}>
+          <IcgBreadcrumb separator={props.separator as string}>
+            {bcItems.map((item, i) => (
+              <IcgBreadcrumb.Item key={i}>{item}</IcgBreadcrumb.Item>
+            ))}
+          </IcgBreadcrumb>
+        </div>
       );
+    }
 
     case 'Drawer': {
       const menuItems = (props.menuItems as string[]) ?? ['Menu 1', 'Menu 2', 'Menu 3'];
-      const drawerTitle = (props.title as string) ?? 'Drawer';
+      const drawerTitle = (props.title as string) ?? 'Menu';
       if (interactive) {
-        return <InteractiveDrawer title={drawerTitle} menuItems={menuItems} width={props.width as number} sx={sx} fontStyle={fontStyle} />;
+        return <InteractiveSideMenu title={drawerTitle} menuItems={menuItems} mode={props.mode as string} theme={props.theme as string} style={mergedStyle} />;
       }
       const tree = buildMenuTree(menuItems);
+      const items = toMenuItems(tree);
       return (
-        <Paper variant="outlined" sx={{ width: props.width as number, height: '100%', overflow: 'auto', ...sx, ...fontOverrideSx }} style={fontStyle}>
-          <Typography variant="subtitle2" sx={{ px: 2, pt: 2, pb: 1 }} style={fontStyle}>{drawerTitle}</Typography>
-          <Divider />
-          <List dense disablePadding>
-            {tree.map((node, i) => (
-              <NestedMenuItem key={i} node={node} depth={0} selected="" onSelect={() => {}} fontStyle={fontStyle} />
-            ))}
-          </List>
-        </Paper>
+        <div style={{ height: '100%', overflow: 'auto', border: '1px solid #f0f0f0', borderRadius: 4, ...mergedStyle }}>
+          <div style={{ padding: '12px 16px 8px', fontWeight: 600, fontSize: 14, borderBottom: '1px solid #f0f0f0' }}>{drawerTitle}</div>
+          <IcgMenu
+            mode={props.mode as 'inline' | 'vertical'}
+            theme={props.theme as 'light' | 'dark'}
+            items={items as any}
+            style={{ border: 'none' }}
+          />
+        </div>
       );
     }
 
     case 'Pagination':
       if (interactive) {
-        return <InteractivePagination count={props.count as number} color={props.color as string} shape={props.shape as string} variant={props.variant as string} size={props.size as string} sx={sx} />;
+        return <InteractivePagination total={props.total as number} pageSize={props.pageSize as number} size={props.size as string} simple={props.simple as boolean} style={mergedStyle} />;
       }
       return (
-        <Pagination
-          count={props.count as number}
-          color={props.color as 'primary'}
-          shape={props.shape as 'rounded'}
-          variant={props.variant as 'outlined'}
-          size={props.size as 'medium'}
-          sx={sx}
-        />
+        <div style={mergedStyle}>
+          <IcgPagination
+            total={props.total as number}
+            pageSize={props.pageSize as number}
+            size={props.size as 'default' | 'small'}
+            simple={props.simple as boolean}
+            current={1}
+          />
+        </div>
       );
 
-    case 'Stepper':
+    case 'Stepper': {
+      const steps = (props.steps as string[]) ?? ['Step 1', 'Step 2', 'Step 3'];
+      const stepItems = steps.map(s => ({ title: s }));
       return (
-        <Stepper activeStep={props.activeStep as number} orientation={props.orientation as 'horizontal'} sx={sx}>
-          {(props.steps as string[])?.map((s) => (
-            <Step key={s}><StepLabel>{s}</StepLabel></Step>
-          ))}
-        </Stepper>
+        <div style={mergedStyle}>
+          <IcgStepper
+            current={props.current as number}
+            direction={props.direction as 'horizontal' | 'vertical'}
+            size={props.size as 'default' | 'small'}
+            items={stepItems}
+          />
+        </div>
       );
+    }
 
-    case 'BottomNavigation':
-      if (interactive) {
-        return <InteractiveBottomNav items={props.items as string[]} showLabels={props.showLabels as boolean} sx={sx} />;
-      }
+    case 'Dropdown': {
+      const dropItems = (props.items as string[]) ?? ['Action 1', 'Action 2'];
+      const menuItems = dropItems.map((item, i) => ({ key: String(i), label: item }));
       return (
-        <BottomNavigation showLabels={props.showLabels as boolean} value={0} sx={sx}>
-          {(props.items as string[])?.map((item, i) => (
-            <BottomNavigationAction
-              key={i}
-              label={item}
-              icon={[<RestoreIcon key="r" />, <FavoriteIcon key="f" />, <LocationIcon key="l" />][i % 3]}
-            />
-          ))}
-        </BottomNavigation>
-      );
-
-    case 'SpeedDial': {
-      const sdActions = (props.actions as string[]) ?? ['Edit', 'Share', 'Print'];
-      const sdIcons = [<EditIcon key="e" />, <ShareIcon key="s" />, <PrintIcon key="p" />, <MailIcon key="m" />, <FavoriteIcon key="f" />, <StarIcon key="st" />];
-      return (
-        <Box sx={{ width: '100%', height: '100%', position: 'relative', ...sx }}>
-          <SpeedDial
-            ariaLabel="Speed Dial"
-            icon={<AddIcon />}
-            direction={props.direction as 'up'}
-            sx={{ position: 'absolute', bottom: 8, right: 8 }}
-            {...(interactive ? {} : { open: false })}
+        <div style={mergedStyle}>
+          <IcgDropdown
+            overlay={
+              <IcgMenu items={menuItems as any} />
+            }
+            placement={props.placement as 'bottomLeft'}
+            trigger={[props.trigger as 'hover' | 'click']}
           >
-            {sdActions.map((a, i) => (
-              <SpeedDialAction key={i} icon={sdIcons[i % sdIcons.length]} tooltipTitle={a} />
-            ))}
-          </SpeedDial>
-        </Box>
+            <IcgButton>
+              {props.label as string} ▾
+            </IcgButton>
+          </IcgDropdown>
+        </div>
       );
     }
 
     /* ── Feedback ────────────────────────────────────────── */
     case 'Alert':
       return (
-        <Alert severity={props.severity as 'info'} variant={props.variant as 'standard'} sx={sx} style={fontStyle}>
+        <IcgAlert
+          type={props.type as 'info' | 'success' | 'warning' | 'danger'}
+          closable={props.closable as boolean}
+          showIcon={props.showIcon as boolean}
+          banner={props.banner as boolean}
+          style={mergedStyle}
+        >
           {props.text as string}
-        </Alert>
+        </IcgAlert>
       );
 
-    case 'Snackbar':
+    case 'Notification':
       return (
-        <Paper elevation={6} sx={{ p: 1.5, px: 2, display: 'flex', alignItems: 'center', ...sx, ...fontOverrideSx }} style={fontStyle}>
-          <Typography variant="body2" style={fontStyle}>{props.message as string}</Typography>
-        </Paper>
+        <div style={{
+          border: '1px solid #d9d9d9',
+          borderRadius: 8,
+          padding: 16,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          ...mergedStyle,
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>{props.message as string}</div>
+          <div style={{ color: '#666', fontSize: 13 }}>{props.description as string}</div>
+        </div>
       );
 
-    case 'Dialog': {
-      const dialogActions = (props.actions as string[]) ?? ['Cancel', 'OK'];
+    case 'Modal':
       return (
-        <Paper variant="outlined" sx={{ p: 2, ...sx, ...fontOverrideSx }} style={fontStyle}>
-          <Typography variant="h6" gutterBottom style={fontStyle}>{props.title as string}</Typography>
-          <Typography variant="body2" color="text.secondary" style={fontStyle}>{props.content as string}</Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
-            {dialogActions.map((a, i) => (
-              <Button
-                key={i}
-                size="small"
-                variant={i === dialogActions.length - 1 ? 'contained' : 'text'}
-                style={fontStyle}
-              >
-                {a}
-              </Button>
-            ))}
-          </Box>
-        </Paper>
+        <div style={{
+          border: '1px solid #d9d9d9',
+          borderRadius: 8,
+          padding: 20,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          backgroundColor: '#fff',
+          ...mergedStyle,
+        }}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>{props.title as string}</div>
+          <div style={{ color: '#666', fontSize: 14, marginBottom: 20 }}>{props.content as string}</div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <IcgButton>{props.cancelText as string || 'Cancel'}</IcgButton>
+            <IcgButton type="primary">{props.okText as string || 'OK'}</IcgButton>
+          </div>
+        </div>
       );
-    }
 
-    case 'CircularProgress':
+    case 'Loading':
       return (
-        <CircularProgress
-          variant={props.variant as 'indeterminate' | 'determinate'}
-          color={props.color as 'primary'}
-          size={props.size as number}
-          value={props.variant === 'determinate' ? (props.value as number) : undefined}
-          sx={sx}
-        />
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', ...mergedStyle }}>
+          <IcgLoading
+            spinning={props.spinning as boolean}
+            size={props.size as 'small' | 'default' | 'large'}
+            tip={(props.tip as string) || undefined}
+          />
+        </div>
       );
 
-    case 'LinearProgress':
+    case 'Popover':
       return (
-        <LinearProgress
-          variant={props.variant as 'indeterminate' | 'determinate'}
-          color={props.color as 'primary'}
-          value={props.variant === 'determinate' ? (props.value as number) : undefined}
-          sx={{ width: '100%', ...sx }}
-        />
+        <IcgPopover
+          title={props.title as string}
+          content={props.content as string}
+          trigger={props.trigger as 'hover' | 'click' | 'focus'}
+          placement={props.placement as 'top'}
+        >
+          <IcgButton type="default" size="small" style={mergedStyle}>Hover me</IcgButton>
+        </IcgPopover>
       );
 
-    case 'Skeleton':
-      return (
-        <Skeleton
-          variant={props.variant as 'rectangular'}
-          animation={props.animation === 'false' ? false : (props.animation as 'pulse' | 'wave')}
-          sx={{ width: '100%', height: '100%', ...sx }}
-        />
-      );
-
-    /* ── Layout ──────────────────────────────────────────── */
+    /* ── Layout (MUI — unchanged) ────────────────────────── */
     case 'Box':
       return (
         <Box sx={{ width: '100%', height: '100%', ...sx }} />
