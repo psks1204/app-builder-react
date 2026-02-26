@@ -9,10 +9,10 @@ import type { LayoutNodeType } from '../store/types';
  */
 export const ALLOWED_CHILDREN: Record<LayoutNodeType | 'root', LayoutNodeType[]> = {
   root:              ['container', 'flex-container'],
-  'container':       ['row'],
+  'container':       ['row', 'flex-container'],
   'row':             ['column'],
-  'column':          ['component', 'content'],
-  'flex-container':  ['component', 'content'],
+  'column':          ['component', 'content', 'container', 'row', 'flex-container'],
+  'flex-container':  ['component', 'content', 'container', 'row', 'flex-container'],
   'component':       [],   // leaf — no children
   'content':         [],   // leaf — no children
 };
@@ -33,10 +33,10 @@ export const NODE_LABELS: Record<LayoutNodeType, string> = {
  * Placeholder text shown inside empty layout nodes.
  */
 export const PLACEHOLDER_TEXT: Partial<Record<LayoutNodeType, string>> = {
-  'container':       'Drop a Row here',
+  'container':       'Drop a Row or Flex here',
   'row':             'Drop Columns here',
-  'column':          'Drop content here',
-  'flex-container':  'Drop content here',
+  'column':          'Drop elements here',
+  'flex-container':  'Drop elements here',
 };
 
 /**
