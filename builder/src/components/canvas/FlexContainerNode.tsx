@@ -16,7 +16,7 @@ const FlexContainerNode: React.FC<{ node: LayoutNode }> = ({ node }) => (
                     ...node.icgClasses,
                 )}
             >
-                <span className="layout-node__label">Flex Container</span>
+                <span className="layout-node__label layout-node__label--flex">Flex Container</span>
                 {node.children.length === 0 ? (
                     <div className="layout-node__placeholder">
                         {PLACEHOLDER_TEXT['flex-container']}

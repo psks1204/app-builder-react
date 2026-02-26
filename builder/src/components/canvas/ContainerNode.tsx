@@ -30,7 +30,7 @@ const ContainerNode: React.FC<ContainerNodeProps> = ({ node }) => {
                         ...extraClasses,
                     )}
                 >
-                    <span className="layout-node__label">
+                    <span className="layout-node__label layout-node__label--container">
                         {node.props.fluid ? 'Container (fluid)' : 'Container'}
                     </span>
                     {node.children.length === 0 ? (

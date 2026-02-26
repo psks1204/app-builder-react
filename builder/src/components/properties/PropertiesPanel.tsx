@@ -19,7 +19,9 @@ const PropertiesPanel: React.FC = () => {
     if (!selectedNode) {
         return (
             <div className="properties-panel">
-                <div style={{ opacity: 0.5, fontSize: 13 }}>Select a node to edit its properties</div>
+                <div className="properties-panel__empty">
+                    Select a node to edit its properties
+                </div>
             </div>
         );
     }
@@ -62,7 +64,6 @@ const PropertiesPanel: React.FC = () => {
         <div className="properties-panel">
             <div className="properties-panel__title">{nodeLabel}</div>
 
-            {/* ── Prop Fields ─────────────────────────────── */}
             {propSchema.map((field) => (
                 <PropFieldEditor
                     key={field.name}
@@ -76,12 +77,11 @@ const PropertiesPanel: React.FC = () => {
                 />
             ))}
 
-            {/* ── ICG Class Editor ────────────────────────── */}
             <ClassEditor node={selectedNode} />
 
-            {/* ── Delete Button ───────────────────────────── */}
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: 20 }}>
                 <button
+                    className="properties-delete-btn"
                     onClick={() => {
                         const parent = findParent(layoutTree, selectedNode.id);
                         const parentId = parent?.id ?? null;
@@ -89,9 +89,8 @@ const PropertiesPanel: React.FC = () => {
                         const idx = siblings.findIndex((c) => c.id === selectedNode.id);
                         executeCommand(createRemoveCommand(selectedNode.id, parentId, idx, selectedNode));
                     }}
-                    style={{ color: 'red', cursor: 'pointer', background: 'none', border: '1px solid red', padding: '4px 12px', borderRadius: 4 }}
                 >
-                    Delete Node
+                    🗑 Delete Node
                 </button>
             </div>
         </div>
@@ -128,7 +127,6 @@ const PropFieldEditor: React.FC<{
                     type="text"
                     value={String(value ?? '')}
                     onChange={handleChange}
-                    style={{ width: '100%', padding: '4px 8px', fontSize: 13, border: '1px solid #ccc', borderRadius: 4 }}
                 />
             )}
 
@@ -140,24 +138,22 @@ const PropFieldEditor: React.FC<{
                     max={field.max}
                     step={field.step}
                     onChange={handleChange}
-                    style={{ width: '100%', padding: '4px 8px', fontSize: 13, border: '1px solid #ccc', borderRadius: 4 }}
                 />
             )}
 
             {field.type === 'boolean' && (
-                <input
-                    type="checkbox"
-                    checked={Boolean(value)}
-                    onChange={handleChange}
-                />
+                <div className="properties-field__checkbox">
+                    <input
+                        type="checkbox"
+                        checked={Boolean(value)}
+                        onChange={handleChange}
+                    />
+                    <span style={{ fontSize: 13 }}>{Boolean(value) ? 'Yes' : 'No'}</span>
+                </div>
             )}
 
             {field.type === 'select' && field.options && (
-                <select
-                    value={String(value ?? '')}
-                    onChange={handleChange}
-                    style={{ width: '100%', padding: '4px 8px', fontSize: 13, border: '1px solid #ccc', borderRadius: 4 }}
-                >
+                <select value={String(value ?? '')} onChange={handleChange}>
                     <option value="">—</option>
                     {field.options.map((opt) => (
                         <option key={opt} value={opt}>{opt}</option>
@@ -179,7 +175,6 @@ const PropFieldEditor: React.FC<{
                     value={Array.isArray(value) ? (value as string[]).join('\n') : String(value ?? '')}
                     onChange={(e) => onChange(e.target.value.split('\n').filter(Boolean))}
                     rows={3}
-                    style={{ width: '100%', padding: '4px 8px', fontSize: 13, border: '1px solid #ccc', borderRadius: 4, resize: 'vertical' }}
                 />
             )}
         </div>
@@ -211,30 +206,25 @@ const ClassEditor: React.FC<{ node: LayoutNode }> = ({ node }) => {
     );
 
     return (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 16 }}>
             <div className="properties-field__label">ICG Classes</div>
-            {/* Applied classes */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
                 {node.icgClasses.map((cls) => (
                     <span
                         key={cls}
-                        style={{
-                            padding: '2px 6px', fontSize: 11, background: '#e3f2fd', borderRadius: 3,
-                            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
-                        }}
+                        className="class-chip"
                         onClick={() => handleRemoveClass(cls)}
+                        title="Click to remove"
                     >
                         {cls} ×
                     </span>
                 ))}
             </div>
-            {/* Class picker */}
             <select
                 value=""
                 onChange={(e) => {
                     if (e.target.value) handleAddClass(e.target.value);
                 }}
-                style={{ width: '100%', padding: '4px 8px', fontSize: 12, border: '1px solid #ccc', borderRadius: 4 }}
             >
                 <option value="">+ Add class…</option>
                 {categories.map((cat) => (

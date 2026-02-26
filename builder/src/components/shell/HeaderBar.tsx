@@ -1,6 +1,5 @@
 // ============================================================
 // Header Bar — top bar with undo/redo, save, load, export, theme
-// Now with API server integration for save/load
 // ============================================================
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { useBuilderStore } from '../../store/builderStore';
@@ -17,7 +16,13 @@ interface DesignMeta {
     updatedAt: string;
 }
 
-const HeaderBar: React.FC<{ onExport: () => void }> = ({ onExport }) => {
+interface HeaderBarProps {
+    onExport: () => void;
+    appMode: 'builder' | 'preview';
+    onModeChange: (mode: 'builder' | 'preview') => void;
+}
+
+const HeaderBar: React.FC<HeaderBarProps> = ({ onExport, appMode, onModeChange }) => {
     const undo = useBuilderStore((s) => s.undo);
     const redo = useBuilderStore((s) => s.redo);
     const canUndoFn = useBuilderStore((s) => s.canUndo);
@@ -34,40 +39,30 @@ const HeaderBar: React.FC<{ onExport: () => void }> = ({ onExport }) => {
     const isDirty = useBuilderStore((s) => s.isDirty);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // server designs list
     const [serverDesigns, setServerDesigns] = useState<DesignMeta[]>([]);
     const [showLoadMenu, setShowLoadMenu] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    // Fetch server designs once on mount
     useEffect(() => {
         apiListDesigns()
             .then((designs) => setServerDesigns(designs))
-            .catch(() => {
-                /* server might not be running */
-            });
+            .catch(() => { /* server might not be running */ });
     }, []);
 
-    /* ─── Save to Server ─────────────────────────────────── */
     const handleSaveToServer = useCallback(async () => {
         const name = designName || 'My Design';
         setSaving(true);
         try {
             if (designId) {
-                // Update existing
                 await apiUpdateDesign(designId, layoutTree, name, themeMode);
             } else {
-                // Create new
                 const saved = await apiCreateDesign(layoutTree, name, themeMode);
                 if (saved.id) setDesignId(saved.id);
             }
             markSaved();
-            // Refresh server design list
             const designs = await apiListDesigns();
             setServerDesigns(designs);
-        } catch (err) {
-            console.error('Server save failed, falling back to file download', err);
-            // Fallback to local file save
+        } catch {
             saveDesignToFile(layoutTree, name, themeMode);
             markSaved();
         } finally {
@@ -75,14 +70,11 @@ const HeaderBar: React.FC<{ onExport: () => void }> = ({ onExport }) => {
         }
     }, [layoutTree, designName, designId, themeMode, markSaved, setDesignId]);
 
-    /* ─── Save to File (fallback) ────────────────────────── */
     const handleSaveToFile = useCallback(() => {
-        const name = designName || 'My Design';
-        saveDesignToFile(layoutTree, name, themeMode);
+        saveDesignToFile(layoutTree, designName || 'My Design', themeMode);
         markSaved();
     }, [layoutTree, designName, themeMode, markSaved]);
 
-    /* ─── Load from Server ───────────────────────────────── */
     const handleLoadFromServer = useCallback(
         async (id: string) => {
             try {
@@ -99,7 +91,6 @@ const HeaderBar: React.FC<{ onExport: () => void }> = ({ onExport }) => {
         [setLayoutTree, setDesignName, setDesignId],
     );
 
-    /* ─── Load from File ─────────────────────────────────── */
     const handleLoadFile = useCallback(() => {
         fileInputRef.current?.click();
     }, []);
@@ -115,147 +106,98 @@ const HeaderBar: React.FC<{ onExport: () => void }> = ({ onExport }) => {
                 if (result.id) setDesignId(result.id);
                 setShowLoadMenu(false);
             } catch (err) {
-                alert('Failed to load design: ' + (err instanceof Error ? err.message : 'Unknown error'));
+                alert('Failed to load: ' + (err instanceof Error ? err.message : 'Unknown error'));
             }
             if (fileInputRef.current) fileInputRef.current.value = '';
         },
         [setLayoutTree, setDesignName, setDesignId],
     );
 
-    const btnStyle: React.CSSProperties = {
-        padding: '4px 12px',
-        fontSize: 13,
-        cursor: 'pointer',
-        border: '1px solid #ccc',
-        borderRadius: 4,
-        background: '#fff',
-    };
-
     return (
         <div className="builder-header">
+            {/* Left — Logo + Name */}
             <div className="builder-header__group">
-                <strong style={{ fontSize: 14 }}>ICG Builder</strong>
+                <span className="builder-header__logo">⬡ ICG Builder</span>
                 <input
                     type="text"
                     value={designName ?? ''}
                     onChange={(e) => setDesignName(e.target.value)}
                     placeholder="Design name…"
-                    style={{ ...btnStyle, width: 180 }}
+                    className="builder-header__name-input"
                 />
-                {isDirty && (
-                    <span style={{ fontSize: 11, opacity: 0.5 }}>● unsaved</span>
-                )}
-                {designId && (
-                    <span style={{ fontSize: 10, opacity: 0.3 }} title={designId}>
-                        🔗 synced
-                    </span>
-                )}
+                {isDirty && <span className="builder-header__unsaved">● unsaved</span>}
+                {designId && <span className="builder-header__synced" title={designId}>✓ synced</span>}
             </div>
 
+            {/* Center — Mode Toggle */}
+            <div className="builder-header__mode-toggle">
+                <button
+                    onClick={() => onModeChange('builder')}
+                    className={`mode-toggle-btn ${appMode === 'builder' ? 'mode-toggle-btn--active' : ''}`}
+                >
+                    🛠 Builder
+                </button>
+                <button
+                    onClick={() => onModeChange('preview')}
+                    className={`mode-toggle-btn ${appMode === 'preview' ? 'mode-toggle-btn--active' : ''}`}
+                >
+                    👁 Preview
+                </button>
+            </div>
+
+            {/* Right — Actions */}
             <div className="builder-header__group">
-                <button onClick={undo} disabled={!canUndoFn()} style={btnStyle}>
+                <button onClick={undo} disabled={!canUndoFn()} className="header-btn">
                     ↩ Undo
                 </button>
-                <button onClick={redo} disabled={!canRedoFn()} style={btnStyle}>
+                <button onClick={redo} disabled={!canRedoFn()} className="header-btn">
                     ↪ Redo
                 </button>
 
-                {/* Save — primary = server, shift+click = file */}
-                <button
-                    onClick={handleSaveToServer}
-                    disabled={saving}
-                    style={btnStyle}
-                    title="Save to server (shift+click for file)"
-                >
+                <button onClick={handleSaveToServer} disabled={saving} className="header-btn header-btn--primary">
                     {saving ? '⏳' : '💾'} Save
                 </button>
-                <button onClick={handleSaveToFile} style={btnStyle} title="Download as JSON file">
+                <button onClick={handleSaveToFile} className="header-btn" title="Download JSON">
                     📥 File
                 </button>
 
-                {/* Load — dropdown with server designs + file option */}
+                {/* Load Dropdown */}
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                     <button
                         onClick={() => {
                             setShowLoadMenu(!showLoadMenu);
-                            apiListDesigns()
-                                .then((d) => setServerDesigns(d))
-                                .catch(() => { });
+                            apiListDesigns().then((d) => setServerDesigns(d)).catch(() => { });
                         }}
-                        style={btnStyle}
+                        className="header-btn"
                     >
                         📂 Load
                     </button>
                     {showLoadMenu && (
-                        <div
-                            style={{
-                                position: 'absolute',
-                                top: '100%',
-                                right: 0,
-                                background: '#fff',
-                                border: '1px solid #ddd',
-                                borderRadius: 4,
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                zIndex: 100,
-                                minWidth: 220,
-                                maxHeight: 300,
-                                overflowY: 'auto',
-                            }}
-                        >
-                            <div
-                                style={{
-                                    padding: '6px 12px',
-                                    fontSize: 11,
-                                    fontWeight: 'bold',
-                                    borderBottom: '1px solid #eee',
-                                    color: '#666',
-                                }}
-                            >
-                                Server Designs
-                            </div>
+                        <div className="load-dropdown">
+                            <div className="load-dropdown__header">Server Designs</div>
                             {serverDesigns.length === 0 && (
-                                <div style={{ padding: '8px 12px', fontSize: 12, opacity: 0.5 }}>
-                                    No saved designs
+                                <div className="load-dropdown__item">
+                                    <div className="load-dropdown__item-name" style={{ opacity: 0.4 }}>No saved designs</div>
                                 </div>
                             )}
                             {serverDesigns.map((d) => (
-                                <div
-                                    key={d.id}
-                                    onClick={() => handleLoadFromServer(d.id)}
-                                    style={{
-                                        padding: '6px 12px',
-                                        fontSize: 12,
-                                        cursor: 'pointer',
-                                        borderBottom: '1px solid #f5f5f5',
-                                    }}
-                                >
-                                    <div>{d.designName || 'Untitled'}</div>
-                                    <div style={{ fontSize: 10, opacity: 0.5 }}>
-                                        {new Date(d.updatedAt).toLocaleString()}
-                                    </div>
+                                <div key={d.id} onClick={() => handleLoadFromServer(d.id)} className="load-dropdown__item">
+                                    <div className="load-dropdown__item-name">{d.designName || 'Untitled'}</div>
+                                    <div className="load-dropdown__item-date">{new Date(d.updatedAt).toLocaleString()}</div>
                                 </div>
                             ))}
-                            <div
-                                style={{
-                                    padding: '6px 12px',
-                                    borderTop: '1px solid #eee',
-                                    fontSize: 12,
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold',
-                                }}
-                                onClick={handleLoadFile}
-                            >
+                            <div onClick={handleLoadFile} className="load-dropdown__file">
                                 📁 Load from file…
                             </div>
                         </div>
                     )}
                 </div>
 
-                <button onClick={onExport} style={btnStyle}>
+                <button onClick={onExport} className="header-btn">
                     🚀 Export
                 </button>
-                <button onClick={toggleTheme} style={btnStyle}>
-                    {themeMode === 'light' ? '🌙' : '☀️'} Theme
+                <button onClick={toggleTheme} className="header-btn">
+                    {themeMode === 'light' ? '🌙' : '☀️'}
                 </button>
                 <input
                     ref={fileInputRef}

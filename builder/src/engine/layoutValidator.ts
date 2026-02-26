@@ -46,6 +46,17 @@ export const validateTree = (rootNodes: LayoutNode[]): ValidationViolation[] => 
         });
       }
 
+      // Max 12 columns per row
+      if (node.type === 'row') {
+        const colCount = node.children.filter((c) => c.type === 'column').length;
+        if (colCount > 12) {
+          violations.push({
+            nodeId: node.id,
+            message: `Row has ${colCount} columns — maximum is 12`,
+          });
+        }
+      }
+
       // Recurse into children
       if (node.children.length > 0) {
         walk(node.children, node.type);
