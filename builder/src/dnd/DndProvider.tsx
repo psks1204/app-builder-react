@@ -25,6 +25,7 @@ import {
     createMoveCommand,
     createBatchCommand,
     createUpdatePropsCommand,
+    createUpdateClassesCommand,
 } from '../store/commands';
 
 interface DndProviderProps {
@@ -92,7 +93,7 @@ const DndProvider: React.FC<DndProviderProps> = ({ children }) => {
                     // Add the column first
                     executeCommand(createAddLayoutCommand(dragData.nodeType, parentId));
 
-                    // After add, redistribute all column widths evenly
+                    // After add, redistribute all column widths + classes evenly
                     const updatedTree = useBuilderStore.getState().layoutTree;
                     const updatedParent = findNode(updatedTree, parentId);
                     if (updatedParent && updatedParent.type === 'row') {
@@ -102,13 +103,28 @@ const DndProvider: React.FC<DndProviderProps> = ({ children }) => {
                             const evenWidth = Math.floor(12 / totalCols);
                             const remainder = 12 % totalCols;
 
-                            const propCmds = cols.map((col, i) => {
+                            const cmds: ReturnType<typeof createUpdatePropsCommand>[] = [];
+
+                            cols.forEach((col, i) => {
                                 const width = i < remainder ? evenWidth + 1 : evenWidth;
-                                return createUpdatePropsCommand(col.id, { xs: col.props.xs }, { xs: width });
+
+                                // Update props (xs width)
+                                cmds.push(
+                                    createUpdatePropsCommand(col.id, { xs: col.props.xs }, { xs: width }),
+                                );
+
+                                // Update ICG classes: replace column classes, keep others
+                                const nonColClasses = col.icgClasses.filter(
+                                    (c) => !/^lmn-col(-\d+|-[a-z]+-\d+)?$/.test(c),
+                                );
+                                const newClasses = [`lmn-col-${width}`, ...nonColClasses];
+                                cmds.push(
+                                    createUpdateClassesCommand(col.id, [...col.icgClasses], newClasses),
+                                );
                             });
 
-                            if (propCmds.length > 0) {
-                                executeCommand(createBatchCommand(propCmds, 'Redistribute column widths'));
+                            if (cmds.length > 0) {
+                                executeCommand(createBatchCommand(cmds, 'Redistribute column widths'));
                             }
                         }
                     }

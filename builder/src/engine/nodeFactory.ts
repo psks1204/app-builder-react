@@ -33,7 +33,7 @@ export const createLayoutNode = (
       break;
     case 'column':
       base.props = { xs: 12, sm: undefined, md: undefined, lg: undefined, xl: undefined };
-      base.icgClasses = ['lmn-col-12'];
+      base.icgClasses = [`lmn-col-${base.props.xs}`];
       break;
     case 'flex-container':
       base.props = {
