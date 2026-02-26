@@ -1,5 +1,6 @@
 // ============================================================
 // Properties Panel — Dynamic prop editor for selected node
+// With auto-sync column classes and categorized class dropdown
 // ============================================================
 import React, { useCallback } from 'react';
 import { useBuilderStore } from '../../store/builderStore';
@@ -10,6 +11,55 @@ import { findParent } from '../../engine/layoutTree';
 import { NODE_LABELS } from '../../registry/layoutConstraints';
 import { getClassesByCategory, getClassCategories } from '../../registry/classRegistry';
 import type { PropField, LayoutNode } from '../../store/types';
+
+/** Human-readable labels for class categories */
+const CATEGORY_LABELS: Record<string, string> = {
+    display: '📐 Display',
+    flex: '⫸ Flexbox',
+    grid: '▦ Grid / Columns',
+    margin: '↔ Margin',
+    padding: '↕ Padding',
+    sizing: '📏 Sizing',
+    typography: '🔤 Typography',
+    text: 'Aa Text Utilities',
+    fontFamily: '🖋 Font Family',
+    colors: '🎨 Colors',
+    backgrounds: '🎭 Backgrounds',
+    borders: '🔲 Borders',
+    shadows: '💧 Shadows',
+    position: '📍 Position',
+    image: '🖼 Image',
+    visibility: '👁 Visibility',
+};
+
+/**
+ * Build the correct ICG column classes from xs/sm/md/lg/xl props.
+ * This is the single source of truth for column class generation.
+ */
+function buildColumnClasses(props: Record<string, unknown>): string[] {
+    const classes: string[] = [];
+    const xs = props.xs as number | undefined;
+    const sm = props.sm as number | undefined;
+    const md = props.md as number | undefined;
+    const lg = props.lg as number | undefined;
+    const xl = props.xl as number | undefined;
+
+    if (xs !== undefined && xs !== null) classes.push(`lmn-col-${xs}`);
+    if (sm !== undefined && sm !== null) classes.push(`lmn-col-sm-${sm}`);
+    if (md !== undefined && md !== null) classes.push(`lmn-col-md-${md}`);
+    if (lg !== undefined && lg !== null) classes.push(`lmn-col-lg-${lg}`);
+    if (xl !== undefined && xl !== null) classes.push(`lmn-col-xl-${xl}`);
+
+    // If no xs set, default to lmn-col
+    if (classes.length === 0) classes.push('lmn-col');
+
+    return classes;
+}
+
+/** Check if a class is an auto-managed column class (lmn-col-*) */
+function isColumnClass(cls: string): boolean {
+    return /^lmn-col(-\d+|-[a-z]+-\d+)?$/.test(cls);
+}
 
 const PropertiesPanel: React.FC = () => {
     const selectedNode = useBuilderStore((s) => s.getSelectedNode());
@@ -60,6 +110,33 @@ const PropertiesPanel: React.FC = () => {
         ];
     }
 
+    /**
+     * Handle prop changes.
+     * For columns: auto-sync ICG classes when xs/sm/md/lg/xl change.
+     */
+    const handlePropChange = (field: PropField, val: unknown) => {
+        const oldProps = { [field.name]: selectedNode.props[field.name] };
+        const newProps = { [field.name]: val };
+        executeCommand(createUpdatePropsCommand(selectedNode.id, oldProps, newProps));
+
+        // Auto-sync column classes when breakpoint widths change
+        if (selectedNode.type === 'column' && ['xs', 'sm', 'md', 'lg', 'xl'].includes(field.name)) {
+            // Build new props with the updated value
+            const updatedProps = { ...selectedNode.props, [field.name]: val };
+            const newColClasses = buildColumnClasses(updatedProps);
+
+            // Keep non-column classes intact, replace column classes
+            const nonColumnClasses = selectedNode.icgClasses.filter((c) => !isColumnClass(c));
+            const mergedClasses = [...newColClasses, ...nonColumnClasses];
+
+            executeCommand(createUpdateClassesCommand(
+                selectedNode.id,
+                [...selectedNode.icgClasses],
+                mergedClasses,
+            ));
+        }
+    };
+
     return (
         <div className="properties-panel">
             <div className="properties-panel__title">{nodeLabel}</div>
@@ -69,11 +146,7 @@ const PropertiesPanel: React.FC = () => {
                     key={field.name}
                     field={field}
                     value={selectedNode.props[field.name]}
-                    onChange={(val) => {
-                        const oldProps = { [field.name]: selectedNode.props[field.name] };
-                        const newProps = { [field.name]: val };
-                        executeCommand(createUpdatePropsCommand(selectedNode.id, oldProps, newProps));
-                    }}
+                    onChange={(val) => handlePropChange(field, val)}
                 />
             ))}
 
@@ -181,7 +254,7 @@ const PropFieldEditor: React.FC<{
     );
 };
 
-/* ─── ICG Class Editor ─────────────────────────────────── */
+/* ─── Categorized ICG Class Editor ─────────────────────── */
 const ClassEditor: React.FC<{ node: LayoutNode }> = ({ node }) => {
     const executeCommand = useBuilderStore((s) => s.executeCommand);
     const categories = getClassCategories();
@@ -198,6 +271,10 @@ const ClassEditor: React.FC<{ node: LayoutNode }> = ({ node }) => {
 
     const handleRemoveClass = useCallback(
         (className: string) => {
+            // Don't allow removing auto-managed column classes for column nodes
+            if (node.type === 'column' && isColumnClass(className)) {
+                return; // These are managed by the width props
+            }
             const oldClasses = [...node.icgClasses];
             const newClasses = node.icgClasses.filter((c) => c !== className);
             executeCommand(createUpdateClassesCommand(node.id, oldClasses, newClasses));
@@ -205,37 +282,78 @@ const ClassEditor: React.FC<{ node: LayoutNode }> = ({ node }) => {
         [node, executeCommand],
     );
 
+    /** Categorize applied classes for display */
+    const getClassCategory = (cls: string): string => {
+        for (const cat of categories) {
+            if (getClassesByCategory(cat).includes(cls)) {
+                return CATEGORY_LABELS[cat] ?? cat;
+            }
+        }
+        return 'Other';
+    };
+
+    /** Group applied classes by category */
+    const groupedClasses: Record<string, string[]> = {};
+    node.icgClasses.forEach((cls) => {
+        const cat = getClassCategory(cls);
+        if (!groupedClasses[cat]) groupedClasses[cat] = [];
+        groupedClasses[cat].push(cls);
+    });
+
     return (
-        <div style={{ marginTop: 16 }}>
-            <div className="properties-field__label">ICG Classes</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-                {node.icgClasses.map((cls) => (
-                    <span
-                        key={cls}
-                        className="class-chip"
-                        onClick={() => handleRemoveClass(cls)}
-                        title="Click to remove"
-                    >
-                        {cls} ×
-                    </span>
-                ))}
-            </div>
+        <div className="class-editor">
+            <div className="properties-field__label" style={{ marginBottom: 8 }}>ICG Classes</div>
+
+            {/* Applied classes — grouped by category */}
+            {Object.keys(groupedClasses).length > 0 ? (
+                <div className="class-editor__groups">
+                    {Object.entries(groupedClasses).map(([cat, classes]) => (
+                        <div key={cat} className="class-editor__group">
+                            <div className="class-editor__group-label">{cat}</div>
+                            <div className="class-editor__chips">
+                                {classes.map((cls) => {
+                                    const isAutoManaged = node.type === 'column' && isColumnClass(cls);
+                                    return (
+                                        <span
+                                            key={cls}
+                                            className={`class-chip ${isAutoManaged ? 'class-chip--auto' : ''}`}
+                                            onClick={() => handleRemoveClass(cls)}
+                                            title={isAutoManaged ? 'Auto-managed by width props' : 'Click to remove'}
+                                        >
+                                            {cls} {isAutoManaged ? '🔒' : '×'}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8, fontStyle: 'italic' }}>
+                    No classes applied
+                </div>
+            )}
+
+            {/* Categorized dropdown */}
             <select
                 value=""
                 onChange={(e) => {
                     if (e.target.value) handleAddClass(e.target.value);
                 }}
+                className="class-editor__dropdown"
             >
                 <option value="">+ Add class…</option>
-                {categories.map((cat) => (
-                    <optgroup key={cat} label={cat}>
-                        {getClassesByCategory(cat)
-                            .filter((c) => !node.icgClasses.includes(c))
-                            .map((c) => (
+                {categories.map((cat) => {
+                    const available = getClassesByCategory(cat).filter((c) => !node.icgClasses.includes(c));
+                    if (available.length === 0) return null;
+                    return (
+                        <optgroup key={cat} label={CATEGORY_LABELS[cat] ?? cat}>
+                            {available.map((c) => (
                                 <option key={c} value={c}>{c}</option>
                             ))}
-                    </optgroup>
-                ))}
+                        </optgroup>
+                    );
+                })}
             </select>
         </div>
     );

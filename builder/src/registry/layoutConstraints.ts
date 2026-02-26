@@ -35,8 +35,8 @@ export const NODE_LABELS: Record<LayoutNodeType, string> = {
 export const PLACEHOLDER_TEXT: Partial<Record<LayoutNodeType, string>> = {
   'container':       'Drop a Row here',
   'row':             'Drop Columns here',
-  'column':          'Drop Components or Content here',
-  'flex-container':  'Drop Components or Content here',
+  'column':          'Drop content here',
+  'flex-container':  'Drop content here',
 };
 
 /**
