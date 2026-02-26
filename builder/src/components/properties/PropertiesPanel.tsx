@@ -254,7 +254,7 @@ const PropFieldEditor: React.FC<{
     );
 };
 
-/* ─── Categorized ICG Class Editor ─────────────────────── */
+/* ─── Categorized ICG Class Editor — Per-category dropdowns ── */
 const ClassEditor: React.FC<{ node: LayoutNode }> = ({ node }) => {
     const executeCommand = useBuilderStore((s) => s.executeCommand);
     const categories = getClassCategories();
@@ -271,9 +271,8 @@ const ClassEditor: React.FC<{ node: LayoutNode }> = ({ node }) => {
 
     const handleRemoveClass = useCallback(
         (className: string) => {
-            // Don't allow removing auto-managed column classes for column nodes
             if (node.type === 'column' && isColumnClass(className)) {
-                return; // These are managed by the width props
+                return;
             }
             const oldClasses = [...node.icgClasses];
             const newClasses = node.icgClasses.filter((c) => c !== className);
@@ -282,36 +281,44 @@ const ClassEditor: React.FC<{ node: LayoutNode }> = ({ node }) => {
         [node, executeCommand],
     );
 
-    /** Categorize applied classes for display */
-    const getClassCategory = (cls: string): string => {
-        for (const cat of categories) {
-            if (getClassesByCategory(cat).includes(cls)) {
-                return CATEGORY_LABELS[cat] ?? cat;
-            }
-        }
-        return 'Other';
-    };
-
-    /** Group applied classes by category */
-    const groupedClasses: Record<string, string[]> = {};
-    node.icgClasses.forEach((cls) => {
-        const cat = getClassCategory(cls);
-        if (!groupedClasses[cat]) groupedClasses[cat] = [];
-        groupedClasses[cat].push(cls);
-    });
-
     return (
         <div className="class-editor">
             <div className="properties-field__label" style={{ marginBottom: 8 }}>ICG Classes</div>
 
-            {/* Applied classes — grouped by category */}
-            {Object.keys(groupedClasses).length > 0 ? (
-                <div className="class-editor__groups">
-                    {Object.entries(groupedClasses).map(([cat, classes]) => (
-                        <div key={cat} className="class-editor__group">
-                            <div className="class-editor__group-label">{cat}</div>
+            {/* Per-category rows */}
+            {categories.map((cat) => {
+                const allInCat = getClassesByCategory(cat);
+                const appliedInCat = node.icgClasses.filter((c) => allInCat.includes(c));
+                const availableInCat = allInCat.filter((c) => !node.icgClasses.includes(c));
+
+                // Only show category if there are applied classes OR available ones
+                if (appliedInCat.length === 0 && availableInCat.length === 0) return null;
+
+                return (
+                    <div key={cat} className="class-editor__category">
+                        <div className="class-editor__category-header">
+                            <span className="class-editor__category-label">
+                                {CATEGORY_LABELS[cat] ?? cat}
+                            </span>
+                            {availableInCat.length > 0 && (
+                                <select
+                                    value=""
+                                    onChange={(e) => {
+                                        if (e.target.value) handleAddClass(e.target.value);
+                                    }}
+                                    className="class-editor__category-select"
+                                    title={`Add ${cat} class`}
+                                >
+                                    <option value="">+</option>
+                                    {availableInCat.map((c) => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+                        {appliedInCat.length > 0 && (
                             <div className="class-editor__chips">
-                                {classes.map((cls) => {
+                                {appliedInCat.map((cls) => {
                                     const isAutoManaged = node.type === 'column' && isColumnClass(cls);
                                     return (
                                         <span
@@ -325,36 +332,10 @@ const ClassEditor: React.FC<{ node: LayoutNode }> = ({ node }) => {
                                     );
                                 })}
                             </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8, fontStyle: 'italic' }}>
-                    No classes applied
-                </div>
-            )}
-
-            {/* Categorized dropdown */}
-            <select
-                value=""
-                onChange={(e) => {
-                    if (e.target.value) handleAddClass(e.target.value);
-                }}
-                className="class-editor__dropdown"
-            >
-                <option value="">+ Add class…</option>
-                {categories.map((cat) => {
-                    const available = getClassesByCategory(cat).filter((c) => !node.icgClasses.includes(c));
-                    if (available.length === 0) return null;
-                    return (
-                        <optgroup key={cat} label={CATEGORY_LABELS[cat] ?? cat}>
-                            {available.map((c) => (
-                                <option key={c} value={c}>{c}</option>
-                            ))}
-                        </optgroup>
-                    );
-                })}
-            </select>
+                        )}
+                    </div>
+                );
+            })}
         </div>
     );
 };

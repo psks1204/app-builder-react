@@ -1,5 +1,5 @@
 // ============================================================
-// Container Node — renders lmn-container / lmn-container-fluid
+// Container Node — with quick-add "+ Row" button
 // ICG layout classes stripped from canvas to avoid conflicts
 // ============================================================
 import React from 'react';
@@ -7,6 +7,8 @@ import type { LayoutNode } from '../../store/types';
 import DroppableZone from '../../dnd/DroppableZone';
 import LayoutRenderer from './LayoutRenderer';
 import SelectionOverlay from './SelectionOverlay';
+import { useBuilderStore } from '../../store/builderStore';
+import { createAddLayoutCommand } from '../../store/commands';
 import { PLACEHOLDER_TEXT } from '../../registry/layoutConstraints';
 
 interface ContainerNodeProps {
@@ -14,12 +16,18 @@ interface ContainerNodeProps {
 }
 
 const ContainerNode: React.FC<ContainerNodeProps> = ({ node }) => {
+    const executeCommand = useBuilderStore((s) => s.executeCommand);
+
     // Filter out ICG layout classes for canvas display  
-    // These are stored on the node for preview/export only
     const canvasClasses = node.icgClasses.filter(
         (c) => !/^lmn-(container|row|col)/.test(c),
     );
     const extraClassStr = canvasClasses.length > 0 ? ' ' + canvasClasses.join(' ') : '';
+
+    const handleAddRow = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        executeCommand(createAddLayoutCommand('row', node.id));
+    };
 
     return (
         <SelectionOverlay nodeId={node.id} nodeType="container">
@@ -33,6 +41,13 @@ const ContainerNode: React.FC<ContainerNodeProps> = ({ node }) => {
                     ) : (
                         <LayoutRenderer nodes={node.children} />
                     )}
+                    <button
+                        className="quick-add-btn quick-add-btn--row"
+                        onClick={handleAddRow}
+                        title="Add a Row"
+                    >
+                        + Row
+                    </button>
                 </div>
             </DroppableZone>
         </SelectionOverlay>

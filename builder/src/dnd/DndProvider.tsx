@@ -1,6 +1,6 @@
 // ============================================================
 // DnD Provider — wraps the builder in @dnd-kit context
-// With auto-redistribute column widths on column add
+// With parent-fallback drop resolution & auto column redistribute
 // ============================================================
 import React, { useCallback, useState } from 'react';
 import {
@@ -32,6 +32,46 @@ interface DndProviderProps {
     children: React.ReactNode;
 }
 
+/**
+ * Walk UP the tree from the immediate drop target to find the
+ * nearest ancestor that accepts the dragged child type.
+ * Returns { id, type } of the resolved target, or null.
+ */
+function resolveDropTarget(
+    tree: import('../store/types').LayoutNode[],
+    immediateTargetId: string,
+    immediateTargetType: LayoutNodeType | 'root',
+    dragData: DragData,
+): { id: string | null; type: LayoutNodeType | 'root' } | null {
+    let currentId: string | null = immediateTargetId === 'canvas-root' ? null : immediateTargetId;
+    let currentType: LayoutNodeType | 'root' = immediateTargetType;
+
+    // Try up to 10 ancestors (safety limit)
+    for (let i = 0; i < 10; i++) {
+        if (canDrop(dragData, currentType, tree, currentId)) {
+            return { id: currentId, type: currentType };
+        }
+
+        // Move up to parent
+        if (currentId === null) {
+            // Already at root, can't go higher
+            return null;
+        }
+
+        const parent = findParent(tree, currentId);
+        if (parent) {
+            currentId = parent.id;
+            currentType = parent.type;
+        } else {
+            // Node is at root level, try root
+            currentId = null;
+            currentType = 'root';
+        }
+    }
+
+    return null;
+}
+
 const DndProvider: React.FC<DndProviderProps> = ({ children }) => {
     const executeCommand = useBuilderStore((s) => s.executeCommand);
     const layoutTree = useBuilderStore((s) => s.layoutTree);
@@ -57,22 +97,22 @@ const DndProvider: React.FC<DndProviderProps> = ({ children }) => {
             const dragData = active.data.current as DragData | undefined;
             if (!dragData) return;
 
-            const dropTargetId = over.id as string;
-            const dropTargetType =
+            const immediateTargetId = over.id as string;
+            const immediateTargetType =
                 (over.data.current?.nodeType as LayoutNodeType | 'root') ?? 'root';
 
-            if (
-                !canDrop(
-                    dragData,
-                    dropTargetType,
-                    layoutTree,
-                    dropTargetId === 'canvas-root' ? null : dropTargetId,
-                )
-            ) {
-                return;
-            }
+            // ── Resolve drop target with parent-fallback ──
+            // If dragging a row onto a row (which rejects it), walk up
+            // to the container which DOES accept rows
+            const resolved = resolveDropTarget(
+                layoutTree,
+                immediateTargetId,
+                immediateTargetType,
+                dragData,
+            );
+            if (!resolved) return; // No valid target found anywhere
 
-            const parentId = dropTargetId === 'canvas-root' ? null : dropTargetId;
+            const parentId = resolved.id;
 
             if (dragData.source === 'palette') {
                 if (dragData.nodeType === 'component' && dragData.componentType) {
@@ -85,12 +125,10 @@ const DndProvider: React.FC<DndProviderProps> = ({ children }) => {
                     if (parentNode && parentNode.type === 'row') {
                         const currentColCount = parentNode.children.filter((c) => c.type === 'column').length;
                         if (currentColCount >= 12) {
-                            // Max 12 columns reached — silently reject
                             return;
                         }
                     }
 
-                    // Add the column first
                     executeCommand(createAddLayoutCommand(dragData.nodeType, parentId));
 
                     // After add, redistribute all column widths + classes evenly
@@ -108,12 +146,10 @@ const DndProvider: React.FC<DndProviderProps> = ({ children }) => {
                             cols.forEach((col, i) => {
                                 const width = i < remainder ? evenWidth + 1 : evenWidth;
 
-                                // Update props (xs width)
                                 cmds.push(
                                     createUpdatePropsCommand(col.id, { xs: col.props.xs }, { xs: width }),
                                 );
 
-                                // Update ICG classes: replace column classes, keep others
                                 const nonColClasses = col.icgClasses.filter(
                                     (c) => !/^lmn-col(-\d+|-[a-z]+-\d+)?$/.test(c),
                                 );
