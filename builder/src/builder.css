@@ -1,0 +1,242 @@
+/* ============================================================
+   ICG Layout Builder — Application Chrome CSS
+   Only builder-specific styles live here.
+   All component and layout styling uses ICG classes exclusively.
+   ============================================================ */
+
+/* ── Root ──────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* ── Builder Shell ────────────────────────────────────── */
+.builder-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.builder-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebar Chrome ───────────────────────────────────── */
+.builder-sidebar {
+  width: 260px;
+  min-width: 260px;
+  overflow-y: auto;
+  border-right: 1px solid var(--lmn-border-color, #e0e0e0);
+}
+
+.builder-sidebar--right {
+  border-right: none;
+  border-left: 1px solid var(--lmn-border-color, #e0e0e0);
+}
+
+/* ── Canvas Chrome ────────────────────────────────────── */
+.builder-canvas {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.builder-canvas__inner {
+  min-height: 100%;
+  padding: 24px;
+}
+
+.builder-canvas__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  opacity: 0.5;
+  font-size: 16px;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── DnD Overlays ─────────────────────────────────────── */
+.dnd-drag-overlay {
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.dnd-drop-indicator {
+  outline: 2px dashed var(--lmn-color-primary, #056dae);
+  outline-offset: -2px;
+  transition: outline-color 0.15s ease;
+}
+
+.dnd-drop-invalid {
+  outline-color: var(--lmn-color-error, #d32f2f);
+}
+
+/* ── Layout Node Outlines (design-time only) ──────────── */
+.layout-node {
+  position: relative;
+  min-height: 40px;
+}
+
+.layout-node--container {
+  border: 1px dashed var(--lmn-border-color, #bdbdbd);
+  margin-bottom: 8px;
+  padding: 8px;
+}
+
+.layout-node--row {
+  border: 1px dashed #90caf9;
+  margin-bottom: 4px;
+  padding: 4px;
+}
+
+.layout-node--column {
+  border: 1px dashed #a5d6a7;
+  padding: 4px;
+  min-height: 48px;
+}
+
+.layout-node--flex-container {
+  border: 1px dashed #ce93d8;
+  margin-bottom: 8px;
+  padding: 8px;
+}
+
+.layout-node--selected {
+  outline: 2px solid var(--lmn-color-primary, #056dae);
+  outline-offset: 1px;
+}
+
+.layout-node__label {
+  position: absolute;
+  top: -10px;
+  left: 8px;
+  font-size: 10px;
+  padding: 0 4px;
+  line-height: 1;
+  opacity: 0.7;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ── Component Node (design-time wrapper) ─────────────── */
+.component-node {
+  position: relative;
+  padding: 4px;
+  cursor: pointer;
+  transition: outline 0.1s ease;
+}
+
+.component-node:hover {
+  outline: 1px solid var(--lmn-color-primary, #056dae);
+  outline-offset: 1px;
+}
+
+/* ── Empty State Placeholders ─────────────────────────── */
+.layout-node__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  opacity: 0.4;
+  font-size: 12px;
+  user-select: none;
+}
+
+/* ── Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+/* ── Header Chrome ────────────────────────────────────── */
+.builder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--lmn-border-color, #e0e0e0);
+  gap: 8px;
+}
+
+.builder-header__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Palette ──────────────────────────────────────────── */
+.palette-section {
+  padding: 8px;
+}
+
+.palette-section__title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: grab;
+  border-radius: 4px;
+  font-size: 13px;
+  user-select: none;
+  transition: background 0.1s ease;
+}
+
+.palette-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.palette-item:active {
+  cursor: grabbing;
+}
+
+/* ── Properties Panel ─────────────────────────────────── */
+.properties-panel {
+  padding: 12px;
+}
+
+.properties-panel__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.properties-field {
+  margin-bottom: 12px;
+}
+
+.properties-field__label {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 4px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}

@@ -1,0 +1,29 @@
+{
+    "name": "icg-builder",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@citi-icg-172888/icgds-react": "^6.3.0-beta.11",
+        "@dnd-kit/core": "^6.3.1",
+        "@dnd-kit/sortable": "^10.0.0",
+        "@dnd-kit/utilities": "^3.2.2",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "uuid": "^11.1.0",
+        "zustand": "^5.0.3"
+    },
+    "devDependencies": {
+        "@types/react": "^19.2.13",
+        "@types/react-dom": "^19.2.3",
+        "@types/uuid": "^10.0.0",
+        "@vitejs/plugin-react": "^5.1.4",
+        "typescript": "~5.9.3",
+        "vite": "^7.3.1"
+    }
+}
